@@ -9,9 +9,9 @@ import (
 )
 
 // Metrics updates program counters.
-func Metrics() web.MidFunc {
-	m := func(next web.HandlerFunc) web.HandlerFunc {
-		h := func(ctx context.Context, r *http.Request) web.Encoder {
+func Metrics() web.Middleware {
+	return func(next web.HandlerFunc) web.HandlerFunc {
+		return func(ctx context.Context, r *http.Request) web.Encoder {
 			ctx = metrics.Set(ctx)
 
 			resp := next(ctx, r)
@@ -28,9 +28,5 @@ func Metrics() web.MidFunc {
 
 			return resp
 		}
-
-		return h
 	}
-
-	return m
 }

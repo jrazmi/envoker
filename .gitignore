@@ -1,4 +1,34 @@
 node_modules
-zzz_llm_dumps
-
 .DS_Store
+
+
+localdocker-compose.yml
+
+
+#data
+zlocals
+dumps
+workshop/dev/data
+workshop/dev/firebase/firebase-debug.log
+workshop/dev/firebase/firestore-debug.log
+workshop/dev/firebase/data
+
+#llm
+*.dump.txt
+*_dump.txt
+
+# Test related files
+coverage.out
+coverage.html
+*.test
+*.prof
+*.cov
+*.out
+tmp
+
+# Benchmark results
+*.bench
+
+# secrets and env
+secrets.txt
+*.env

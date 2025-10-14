@@ -5,7 +5,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/jrazmi/envoker/sdk/cryptids"
+	"github.com/google/uuid"
 )
 
 type telKey int
@@ -29,11 +29,8 @@ func NewTelemetry() Telemetry {
 }
 
 func (t Telemetry) SetTraceID(ctx context.Context) context.Context {
-	tid, err := cryptids.GenerateID()
-	if err != nil {
-		return context.WithValue(ctx, traceIDKey, "--------NOTRACE--------")
-	}
-	return context.WithValue(ctx, traceIDKey, tid)
+	tid := uuid.New()
+	return context.WithValue(ctx, traceIDKey, tid.String())
 }
 func (t Telemetry) GetTraceID(ctx context.Context) string {
 	v, ok := ctx.Value(traceIDKey).(string)

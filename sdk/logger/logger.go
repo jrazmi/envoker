@@ -1,21 +1,3 @@
-/*
-
-Copyright 2018, 2019, 2020, 2021, 2022, 2023, 2024 Ardan Labs
-hello@ardanlabs.com
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-*/
-// Package logger provides support for initializing the log system.
 package logger
 
 import (
@@ -23,162 +5,144 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"log/slog"
 	"os"
-	"path/filepath"
-	"runtime"
 	"time"
 
-	"log/slog"
+	"github.com/jrazmi/envoker/sdk/environment"
 )
 
-// TraceIDFn represents a function that can return the trace id from
-// the specified context.
-type TraceIDFn func(ctx context.Context) string
-
-// Logger represents a logger for logging information.
+// Logger is a wrapper around the standard slog.Logger.
 type Logger struct {
-	handler   slog.Handler
-	traceIDFn TraceIDFn
+	*slog.Logger
 }
 
-// New constructs a new log for application use.
-func New(w io.Writer, minLevel Level, serviceName string, traceIDFn TraceIDFn) *Logger {
-	return new(w, minLevel, serviceName, traceIDFn, Events{})
+// options holds all configurable settings for the logger.
+type options struct {
+	level      slog.Level
+	output     io.Writer
+	addSource  bool
+	format     string // "json" or "text"
+	timeFormat string // "RFC3339", "Unix", "UnixMilli", or custom format
 }
 
-// NewWithEvents constructs a new log for application use with events.
-func NewWithEvents(w io.Writer, minLevel Level, serviceName string, traceIDFn TraceIDFn, events Events) *Logger {
-	return new(w, minLevel, serviceName, traceIDFn, events)
+// Config is the exportable configuration struct
+type Options struct {
+	Level      string `yaml:"level" toml:"level" json:"level" env:"LOG_LEVEL" default:"INFO"`
+	Output     string `yaml:"output" toml:"output" json:"output" env:"LOG_OUTPUT" default:"STDOUT"`
+	Format     string `yaml:"format" toml:"format" json:"format" env:"LOG_FORMAT" default:"json"`
+	TimeFormat string `yaml:"time_format" toml:"time_format" json:"time_format" env:"LOG_TIME_FORMAT" default:"RFC3339"`
 }
 
-// NewWithHandler returns a new log for application use with the underlying
-// handler.
-func NewWithHandler(h slog.Handler) *Logger {
-	return &Logger{handler: h}
-}
+// Option takes config option and  returns formatted config
+type Option func(*options)
 
-// NewStdLogger returns a standard library Logger that wraps the slog Logger.
-func NewStdLogger(logger *Logger, level Level) *log.Logger {
-	return slog.NewLogLogger(logger.handler, slog.Level(level))
-}
-
-// Debug logs at LevelDebug with the given context.
-func (log *Logger) Debug(ctx context.Context, msg string, args ...any) {
-	log.write(ctx, LevelDebug, 3, msg, args...)
-}
-
-// Debugc logs the information at the specified call stack position.
-func (log *Logger) Debugc(ctx context.Context, caller int, msg string, args ...any) {
-	log.write(ctx, LevelDebug, caller, msg, args...)
-}
-
-// Info logs at LevelInfo with the given context.
-func (log *Logger) Info(ctx context.Context, msg string, args ...any) {
-	log.write(ctx, LevelInfo, 3, msg, args...)
-}
-
-// Infoc logs the information at the specified call stack position.
-func (log *Logger) Infoc(ctx context.Context, caller int, msg string, args ...any) {
-	log.write(ctx, LevelInfo, caller, msg, args...)
-}
-
-// Warn logs at LevelWarn with the given context.
-func (log *Logger) Warn(ctx context.Context, msg string, args ...any) {
-	log.write(ctx, LevelWarn, 3, msg, args...)
-}
-
-// Warnc logs the information at the specified call stack position.
-func (log *Logger) Warnc(ctx context.Context, caller int, msg string, args ...any) {
-	log.write(ctx, LevelWarn, caller, msg, args...)
-}
-
-// Error logs at LevelError with the given context.
-func (log *Logger) Error(ctx context.Context, msg string, args ...any) {
-	log.write(ctx, LevelError, 3, msg, args...)
-}
-
-// Errorc logs the information at the specified call stack position.
-func (log *Logger) Errorc(ctx context.Context, caller int, msg string, args ...any) {
-	log.write(ctx, LevelError, caller, msg, args...)
-}
-
-// Alternative version that accepts string values for the env var
-func GetLogLevelFromEnvKeyOrInfo(key string) Level {
-	value, ok := os.LookupEnv(key)
-	if !ok {
-		return LevelInfo
-	}
-
-	// Convert string value to slog.Level
-	switch value {
-	case "DEBUG", "debug":
-		return LevelDebug
-	case "INFO", "info":
-		return LevelInfo
-	case "WARN", "warn":
-		return LevelWarn
-	case "ERROR", "error":
-		return LevelError
-	default:
-		return LevelInfo
+func WithLevel(level string) Option {
+	return func(o *options) {
+		o.level = parseLevel(level)
 	}
 }
-
-func (log *Logger) write(ctx context.Context, level Level, caller int, msg string, args ...any) {
-	slogLevel := slog.Level(level)
-
-	if !log.handler.Enabled(ctx, slogLevel) {
-		return
+func NewDefault(opts ...Option) *Logger {
+	options := Options{
+		Level:      "INFO",
+		Output:     "STDERR",
+		Format:     "json",
+		TimeFormat: time.RFC3339,
 	}
-
-	var pcs [1]uintptr
-	runtime.Callers(caller, pcs[:])
-
-	r := slog.NewRecord(time.Now(), slogLevel, msg, pcs[0])
-
-	if log.traceIDFn != nil {
-		args = append(args, "trace_id", log.traceIDFn(ctx))
-	}
-	r.Add(args...)
-
-	log.handler.Handle(ctx, r)
-	fmt.Println("")
+	return newLogger(options, opts...)
 }
 
-func new(w io.Writer, minLevel Level, serviceName string, traceIDFn TraceIDFn, events Events) *Logger {
+func NewStdLogger(logger *Logger, level slog.Level) *log.Logger {
+	return slog.NewLogLogger(logger.Logger.Handler(), level)
+}
 
-	// Convert the file name to just the name.ext when this key/value will
-	// be logged.
-	f := func(groups []string, a slog.Attr) slog.Attr {
-		if a.Key == slog.SourceKey {
-			if source, ok := a.Value.Any().(*slog.Source); ok {
-				v := fmt.Sprintf("%s:%d", filepath.Base(source.File), source.Line)
-				return slog.Attr{Key: "file", Value: slog.StringValue(v)}
+func NewFromEnv(prefix string, opts ...Option) (*Logger, error) {
+	var options Options
+	if err := environment.ParseEnvTags(prefix, &options); err != nil {
+		return nil, fmt.Errorf("parsing logger config: %w", err)
+	}
+	return newLogger(options, opts...), nil
+
+}
+
+// new creates a new Logger with default settings and applies any given options.
+func newLogger(cfg Options, opts ...Option) *Logger {
+	level := parseLevel(cfg.Level)
+	output := parseOutput(cfg.Output)
+
+	options := &options{
+		level:      level,
+		output:     output,
+		timeFormat: cfg.TimeFormat,
+		format:     cfg.Format,
+	}
+	// Apply options
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	// Ensure output is set
+	if options.output == nil {
+		options.output = os.Stdout
+	}
+
+	handlerOpts := &slog.HandlerOptions{
+		Level:     options.level,
+		AddSource: options.addSource,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			// Custom time formatting
+			if a.Key == slog.TimeKey && options.timeFormat != "" {
+				switch options.timeFormat {
+				case "Unix":
+					return slog.Int64(slog.TimeKey, a.Value.Time().Unix())
+				case "UnixMilli":
+					return slog.Int64(slog.TimeKey, a.Value.Time().UnixMilli())
+				case "RFC3339Nano":
+					return slog.String(slog.TimeKey, a.Value.Time().Format(time.RFC3339Nano))
+				case "RFC3339":
+					return slog.String(slog.TimeKey, a.Value.Time().Format(time.RFC3339))
+				case time.RFC3339, time.RFC3339Nano:
+					return slog.String(slog.TimeKey, a.Value.Time().Format(options.timeFormat))
+				default:
+					// Treat as custom format
+					return slog.String(slog.TimeKey, a.Value.Time().Format(options.timeFormat))
+				}
 			}
-		}
-
-		return a
+			return a
+		},
 	}
 
-	// Construct the slog JSON handler for use.
-	handler := slog.Handler(slog.NewJSONHandler(w, &slog.HandlerOptions{AddSource: true, Level: slog.Level(minLevel), ReplaceAttr: f}))
-
-	// If events are to be processed, wrap the JSON handler around the custom
-	// log handler.
-	if events.Debug != nil || events.Info != nil || events.Warn != nil || events.Error != nil {
-		handler = newLogHandler(handler, events)
+	// Create base handler
+	var handler slog.Handler
+	switch options.format {
+	case "text":
+		handler = slog.NewTextHandler(options.output, handlerOpts)
+	default:
+		handler = slog.NewJSONHandler(options.output, handlerOpts)
 	}
-
-	// Attributes to add to every log.
-	attrs := []slog.Attr{
-		{Key: "service", Value: slog.StringValue(serviceName)},
-	}
-
-	// Add those attributes and capture the final handler.
-	handler = handler.WithAttrs(attrs)
 
 	return &Logger{
-		handler:   handler,
-		traceIDFn: traceIDFn,
+		Logger: slog.New(handler),
 	}
+
+}
+
+// Debugf logs a debug message with formatting
+func (l *Logger) DebugContextf(ctx context.Context, format string, args ...any) {
+	l.DebugContext(ctx, fmt.Sprintf(format, args...))
+}
+
+// Infof logs an info message with formatting
+func (l *Logger) InfoContextf(ctx context.Context, format string, args ...any) {
+	l.InfoContext(ctx, fmt.Sprintf(format, args...))
+}
+
+// Warnf logs a warning message with formatting
+func (l *Logger) WarnContextf(ctx context.Context, format string, args ...any) {
+	l.WarnContext(ctx, fmt.Sprintf(format, args...))
+}
+
+// Errorf logs an error message with formatting
+func (l *Logger) ErrorContextf(ctx context.Context, format string, args ...any) {
+	l.ErrorContext(ctx, fmt.Sprintf(format, args...))
 }

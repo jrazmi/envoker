@@ -9,7 +9,7 @@
 
 # Default configuration
 # We use DEFAULT_OUTPUT_DIR instead of hardcoding this value
-DEFAULT_OUTPUT_DIR="./zzz_llm_dumps"  # Define default here for easier maintenance
+DEFAULT_OUTPUT_DIR="./zlocals"  # Define default here for easier maintenance
 EXCLUDE_PATTERNS=".env node_modules *.exe *.dll *.bin *.jpg *.png *.gif *.zip *.tar *.gz *.env* *.pgsql vendor llm_dumps wraps/dev/data"
 
 # Define architectural layers (using simple variables instead of associative array)
