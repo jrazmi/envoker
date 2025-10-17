@@ -1,0 +1,280 @@
+package bridgegen
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"text/template"
+
+	"github.com/jrazmi/envoker/app/envoker/generators/sqlparser"
+)
+
+// Generate creates bridge files from a parsed SQL schema
+func Generate(parseResult *sqlparser.ParseResult, config Config) (*GenerateResult, error) {
+	result := &GenerateResult{}
+
+	// Prepare template data
+	templateData, err := prepareTemplateData(parseResult, config)
+	if err != nil {
+		result.Errors = append(result.Errors, err)
+		return result, err
+	}
+
+	// Determine output paths
+	bridgeDir := filepath.Join(config.OutputDir, parseResult.Naming.BridgePath)
+	bridgeFile := filepath.Join(bridgeDir, "bridge_gen.go")
+	httpFile := filepath.Join(bridgeDir, "http_gen.go")
+	modelFile := filepath.Join(bridgeDir, "model_gen.go")
+	marshalFile := filepath.Join(bridgeDir, "marshal_gen.go")
+	fopFile := filepath.Join(bridgeDir, "fop_gen.go")
+
+	// Check for existing files
+	if !config.ForceOverwrite {
+		for _, file := range []string{bridgeFile, httpFile, modelFile, marshalFile, fopFile} {
+			if fileExists(file) {
+				result.Warnings = append(result.Warnings, fmt.Sprintf("File exists: %s (use -force to overwrite)", file))
+				return result, fmt.Errorf("file already exists: %s", file)
+			}
+		}
+	}
+
+	// Create output directory
+	if err := os.MkdirAll(bridgeDir, 0755); err != nil {
+		result.Errors = append(result.Errors, err)
+		return result, fmt.Errorf("create directory: %w", err)
+	}
+
+	// Generate all files
+	if err := generateFile(bridgeFile, BridgeTemplate, templateData); err != nil {
+		result.Errors = append(result.Errors, err)
+		return result, fmt.Errorf("generate bridge file: %w", err)
+	}
+	result.BridgeFile = bridgeFile
+
+	if err := generateFile(httpFile, HTTPTemplate, templateData); err != nil {
+		result.Errors = append(result.Errors, err)
+		return result, fmt.Errorf("generate http file: %w", err)
+	}
+	result.HTTPFile = httpFile
+
+	if err := generateFile(modelFile, ModelTemplate, templateData); err != nil {
+		result.Errors = append(result.Errors, err)
+		return result, fmt.Errorf("generate model file: %w", err)
+	}
+	result.ModelFile = modelFile
+
+	if err := generateFile(marshalFile, MarshalTemplate, templateData); err != nil {
+		result.Errors = append(result.Errors, err)
+		return result, fmt.Errorf("generate marshal file: %w", err)
+	}
+	result.MarshalFile = marshalFile
+
+	if err := generateFile(fopFile, FOPTemplate, templateData); err != nil {
+		result.Errors = append(result.Errors, err)
+		return result, fmt.Errorf("generate fop file: %w", err)
+	}
+	result.FOPFile = fopFile
+
+	return result, nil
+}
+
+// prepareTemplateData converts parsed schema to template data
+func prepareTemplateData(parseResult *sqlparser.ParseResult, config Config) (*TemplateData, error) {
+	schema := parseResult.Schema
+	naming := parseResult.Naming
+
+	data := &TemplateData{
+		PackageName:      naming.BridgePackage,
+		RepoPackage:      naming.PackageName,
+		EntityName:       naming.EntityName,
+		EntityNamePlural: naming.EntityNamePlural,
+		EntityNameLower:  naming.EntityNameLower,
+		EntityNameCamel:  toCamelCase(naming.EntityNameLower),
+		HTTPBasePath:     naming.HTTPBasePath,
+		HTTPSingular:     naming.HTTPSingular,
+		PKColumn:         naming.PKColumn,
+		PKGoName:         naming.PKGoName,
+		PKJSONName:       toCamelCase(naming.PKColumn),
+		PKGoType:         strings.TrimPrefix(schema.PrimaryKey.GoType, "*"),
+		PKParamName:      naming.PKParamName,
+		PKURLParam:       naming.PKURLParam,
+		ModulePath:       config.ModulePath,
+	}
+
+	// Build field lists
+	data.EntityFields = buildBridgeFields(schema.Columns, false)
+	data.CreateFields = buildCreateBridgeFields(schema.Columns, schema.PrimaryKey)
+	data.UpdateFields = buildUpdateBridgeFields(schema.Columns, schema.PrimaryKey)
+	data.FilterFields = buildFilterBridgeFields(schema.Columns)
+
+	// Build FK methods
+	data.ForeignKeys = buildFKBridgeMethods(schema.ForeignKeys, naming)
+
+	return data, nil
+}
+
+// buildBridgeFields creates bridge fields from columns
+func buildBridgeFields(columns []sqlparser.Column, omitEmpty bool) []BridgeField {
+	var fields []BridgeField
+	for _, col := range columns {
+		field := BridgeField{
+			RepoName:   sqlparser.ToPascalCase(col.Name),
+			BridgeName: sqlparser.ToPascalCase(col.Name),
+			JSONName:   toCamelCase(col.Name),
+			GoType:     col.GoType,
+			DBColumn:   col.Name,
+			IsPointer:  strings.HasPrefix(col.GoType, "*"),
+			OmitEmpty:  omitEmpty || col.IsNullable,
+			IsTime:     strings.Contains(col.GoType, "time.Time"),
+			IsJSON:     strings.Contains(col.GoType, "json.RawMessage"),
+		}
+		fields = append(fields, field)
+	}
+	return fields
+}
+
+// buildCreateBridgeFields creates bridge fields for Create input
+func buildCreateBridgeFields(columns []sqlparser.Column, pk sqlparser.PrimaryKeyInfo) []BridgeField {
+	var fields []BridgeField
+	for _, col := range columns {
+		// Skip auto-generated PK
+		if col.IsPrimaryKey && col.HasDefault {
+			continue
+		}
+
+		// Skip auto-generated timestamps
+		if (col.Name == "created_at" || col.Name == "updated_at") && col.HasDefault {
+			continue
+		}
+
+		field := BridgeField{
+			RepoName:   sqlparser.ToPascalCase(col.Name),
+			BridgeName: sqlparser.ToPascalCase(col.Name),
+			JSONName:   toCamelCase(col.Name),
+			GoType:     col.GoType,
+			DBColumn:   col.Name,
+			IsPointer:  strings.HasPrefix(col.GoType, "*"),
+			OmitEmpty:  col.IsNullable || col.HasDefault,
+			IsTime:     strings.Contains(col.GoType, "time.Time"),
+			IsJSON:     strings.Contains(col.GoType, "json.RawMessage"),
+		}
+		fields = append(fields, field)
+	}
+	return fields
+}
+
+// buildUpdateBridgeFields creates bridge fields for Update input
+func buildUpdateBridgeFields(columns []sqlparser.Column, pk sqlparser.PrimaryKeyInfo) []BridgeField {
+	var fields []BridgeField
+	for _, col := range columns {
+		// Skip PK and auto-timestamps
+		if col.IsPrimaryKey || col.Name == "created_at" || col.Name == "updated_at" {
+			continue
+		}
+
+		goType := col.GoType
+		if !strings.HasPrefix(goType, "*") && !strings.HasPrefix(goType, "[]") {
+			goType = "*" + goType
+		}
+
+		field := BridgeField{
+			RepoName:   sqlparser.ToPascalCase(col.Name),
+			BridgeName: sqlparser.ToPascalCase(col.Name),
+			JSONName:   toCamelCase(col.Name),
+			GoType:     goType,
+			DBColumn:   col.Name,
+			IsPointer:  true,
+			OmitEmpty:  true,
+			IsTime:     strings.Contains(col.GoType, "time.Time"),
+			IsJSON:     strings.Contains(col.GoType, "json.RawMessage"),
+		}
+		fields = append(fields, field)
+	}
+	return fields
+}
+
+// buildFilterBridgeFields creates bridge fields for Filter
+func buildFilterBridgeFields(columns []sqlparser.Column) []BridgeField {
+	var fields []BridgeField
+	for _, col := range columns {
+		// Skip audit timestamps
+		if col.Name == "created_at" || col.Name == "updated_at" {
+			continue
+		}
+
+		goType := col.GoType
+		if !strings.HasPrefix(goType, "*") && !strings.HasPrefix(goType, "[]") {
+			goType = "*" + goType
+		}
+
+		field := BridgeField{
+			RepoName:   sqlparser.ToPascalCase(col.Name),
+			BridgeName: sqlparser.ToPascalCase(col.Name),
+			JSONName:   toCamelCase(col.Name),
+			GoType:     goType,
+			DBColumn:   col.Name,
+			IsPointer:  true,
+			OmitEmpty:  true,
+			IsTime:     strings.Contains(col.GoType, "time.Time"),
+			IsJSON:     strings.Contains(col.GoType, "json.RawMessage"),
+		}
+		fields = append(fields, field)
+	}
+	return fields
+}
+
+// buildFKBridgeMethods creates FK method data from foreign keys
+func buildFKBridgeMethods(foreignKeys []sqlparser.ForeignKey, naming *sqlparser.NamingContext) []FKBridgeMethod {
+	var methods []FKBridgeMethod
+	for _, fk := range foreignKeys {
+		method := FKBridgeMethod{
+			MethodName:    "httpListBy" + sqlparser.ToPascalCase(fk.ColumnName),
+			RoutePath:     fmt.Sprintf("/%s/{%s}%s", toKebabCase(fk.RefTable), fk.ColumnName, naming.HTTPBasePath),
+			FKColumn:      fk.ColumnName,
+			FKGoName:      sqlparser.ToPascalCase(fk.ColumnName),
+			FKParamName:   sqlparser.ToCamelCase(fk.ColumnName),
+			FKURLParam:    fk.ColumnName,
+			FKGoType:      "string", // Assume string for UUIDs
+			RefEntityName: fk.EntityName,
+		}
+		methods = append(methods, method)
+	}
+	return methods
+}
+
+// toCamelCase converts snake_case to camelCase
+func toCamelCase(s string) string {
+	return sqlparser.ToCamelCase(s)
+}
+
+// toKebabCase converts snake_case to kebab-case
+func toKebabCase(s string) string {
+	return strings.ReplaceAll(s, "_", "-")
+}
+
+// generateFile renders a template and writes it to a file
+func generateFile(filepath string, tmplStr string, data interface{}) error {
+	tmpl, err := template.New("gen").Parse(tmplStr)
+	if err != nil {
+		return fmt.Errorf("parse template: %w", err)
+	}
+
+	f, err := os.Create(filepath)
+	if err != nil {
+		return fmt.Errorf("create file: %w", err)
+	}
+	defer f.Close()
+
+	if err := tmpl.Execute(f, data); err != nil {
+		return fmt.Errorf("execute template: %w", err)
+	}
+
+	return nil
+}
+
+// fileExists checks if a file exists
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
