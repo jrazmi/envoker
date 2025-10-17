@@ -30,12 +30,6 @@ type {{.UpdateStructName}} struct {
 {{- range .UpdateFields}}
 	{{.Name}} {{.GoType}} ` + "`" + `json:"{{.JSONTag}}" db:"{{.DBTag}}"{{if .ValidateTag}} validate:"{{.ValidateTag}}"{{end}}` + "`" + `{{if .Comment}} // {{.Comment}}{{end}}
 {{- end}}
-}
-
-// {{.FilterStructName}} contains optional filters for querying {{.EntityNamePlural}}
-type {{.FilterStructName}} struct {
-{{- range .FilterFields}}
-	{{.Name}} {{.GoType}} ` + "`" + `json:"{{.JSONTag}},omitempty"` + "`" + `{{if .Comment}} // {{.Comment}}{{end}}
-{{- end}}
+	UpdatedAt *time.Time ` + "`" + `json:"updated_at" db:"updated_at"` + "`" + ` // Optional override for updated_at
 }
 `

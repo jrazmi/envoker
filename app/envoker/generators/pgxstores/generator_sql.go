@@ -3,11 +3,12 @@ package pgxstores
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
 
-	"github.com/jrazmi/envoker/app/envoker/generators/sqlparser"
+	"github.com/jrazmi/envoker/app/generators/sqlparser"
 )
 
 // SQLConfig holds configuration for SQL-based generation
@@ -54,36 +55,43 @@ func GenerateFromSQL(parseResult *sqlparser.ParseResult, config SQLConfig) (stri
 
 	// Build template data
 	templateData := map[string]interface{}{
-		"ModulePath":   cfg.ModulePath,
-		"PackageName":  cfg.PackageName,
-		"RepoPackage":  naming.PackageName,
-		"Entity":       cfg.Entity,
-		"StoreType":    cfg.StoreType,
-		"Schema":       cfg.Schema,
-		"Table":        cfg.Table,
-		"PK":           cfg.PK,
-		"PKGoName":     naming.PKGoName,
-		"PKGoType":     strings.TrimPrefix(schema.PrimaryKey.GoType, "*"),
-		"Create":       cfg.Create,
-		"Update":       cfg.Update,
-		"Filter":       cfg.Filter,
-		"EntityFields": fields[cfg.Entity],
-		"CreateFields": fields[cfg.Create],
-		"UpdateFields": fields[cfg.Update],
-		"FilterFields": fields[cfg.Filter],
-		"PKInCreate":   pkInCreate,
-		"ForeignKeys":  buildFKMethodData(schema.ForeignKeys, naming),
-		"NeedsTime":    needsTimeImport(schema.Columns),
-		"NeedsJSON":    needsJSONImport(schema.Columns),
+		"ModulePath":       cfg.ModulePath,
+		"PackageName":      cfg.PackageName,
+		"RepoPackage":      naming.PackageName,
+		"Entity":           cfg.Entity,
+		"StoreType":        cfg.StoreType,
+		"Schema":           cfg.Schema,
+		"Table":            cfg.Table,
+		"PK":               cfg.PK,
+		"PKGoName":         naming.PKGoName,
+		"PKGoType":         strings.TrimPrefix(schema.PrimaryKey.GoType, "*"),
+		"PKParamName":      naming.PKParamName,
+		"Create":           cfg.Create,
+		"Update":           cfg.Update,
+		"Filter":           cfg.Filter,
+		"EntityFields":     fields[cfg.Entity],
+		"CreateFields":     fields[cfg.Create],
+		"UpdateFields":     fields[cfg.Update],
+		"FilterFields":     buildFilterFieldsForFop(schema.Columns),
+		"PKInCreate":       pkInCreate,
+		"ForeignKeys":      buildFKMethodData(schema.ForeignKeys, schema.Columns, naming),
+		"NeedsTime":        needsTimeImport(schema.Columns),
+		"NeedsJSON":        needsJSONImport(schema.Columns),
+		"HasStatusColumn":  sqlparser.HasStatusColumn(schema),
+		"HasDeletedAt":     sqlparser.HasDeletedAtColumn(schema),
+		"OrderByFields":    buildOrderByFields(schema.Columns),
+		"SearchableFields": buildSearchableFields(schema.Columns),
 	}
 
-	// Determine output path
+	// Determine output paths
 	storeDir := filepath.Join(config.OutputDir, naming.StorePath)
-	storeFile := filepath.Join(storeDir, "store_gen.go")
+	storeInitFile := filepath.Join(storeDir, "store.go")
+	storeGenFile := filepath.Join(storeDir, "store_gen.go")
+	fopGenFile := filepath.Join(storeDir, "fop_gen.go")
 
 	// Check for existing file
-	if !config.ForceOverwrite && fileExists(storeFile) {
-		return "", fmt.Errorf("file already exists: %s (use -force to overwrite)", storeFile)
+	if !config.ForceOverwrite && fileExists(storeGenFile) {
+		return "", fmt.Errorf("file already exists: %s (use -force to overwrite)", storeGenFile)
 	}
 
 	// Create output directory
@@ -91,12 +99,24 @@ func GenerateFromSQL(parseResult *sqlparser.ParseResult, config SQLConfig) (stri
 		return "", fmt.Errorf("create directory: %w", err)
 	}
 
-	// Generate store_gen.go
-	if err := generateStoreFile(storeFile, templateData); err != nil {
+	// Generate store.go ONLY if it doesn't exist (never overwrite)
+	if !fileExists(storeInitFile) {
+		if err := generateTemplateFile(storeInitFile, StoreInitTemplate, templateData); err != nil {
+			return "", fmt.Errorf("generate store init file: %w", err)
+		}
+	}
+
+	// Generate store_gen.go (CRUD operations)
+	if err := generateTemplateFile(storeGenFile, StoreTemplate, templateData); err != nil {
 		return "", fmt.Errorf("generate store file: %w", err)
 	}
 
-	return storeFile, nil
+	// Generate fop_gen.go (filter and ordering logic)
+	if err := generateTemplateFile(fopGenFile, FopTemplate, templateData); err != nil {
+		return "", fmt.Errorf("generate fop file: %w", err)
+	}
+
+	return storeGenFile, nil
 }
 
 // convertColumnsToFields converts sqlparser.Column to Field
@@ -202,13 +222,23 @@ type FKMethodData struct {
 }
 
 // buildFKMethodData creates FK method data from foreign keys
-func buildFKMethodData(foreignKeys []sqlparser.ForeignKey, naming *sqlparser.NamingContext) []FKMethodData {
+func buildFKMethodData(foreignKeys []sqlparser.ForeignKey, columns []sqlparser.Column, naming *sqlparser.NamingContext) []FKMethodData {
 	var methods []FKMethodData
 	for _, fk := range foreignKeys {
+		// Look up the actual Go type for this FK column
+		fkGoType := "string" // default fallback
+		for _, col := range columns {
+			if col.Name == fk.ColumnName {
+				// Remove pointer prefix if present since FK parameters should not be pointers
+				fkGoType = strings.TrimPrefix(col.GoType, "*")
+				break
+			}
+		}
+
 		method := FKMethodData{
 			MethodName:  "List" + fk.MethodSuffix,
 			FKColumn:    fk.ColumnName,
-			FKGoType:    "string", // Assume string for UUIDs
+			FKGoType:    fkGoType,
 			FKParamName: sqlparser.ToCamelCase(fk.ColumnName),
 		}
 		methods = append(methods, method)
@@ -236,9 +266,96 @@ func needsJSONImport(columns []sqlparser.Column) bool {
 	return false
 }
 
-// generateStoreFile renders the store template to a file
-func generateStoreFile(filepath string, data interface{}) error {
-	tmpl, err := template.New("store").Parse(StoreTemplate)
+// FilterFieldForFop represents a field for filter generation
+type FilterFieldForFop struct {
+	GoName     string // PascalCase name
+	DBColumn   string // snake_case column name
+	ParamName  string // camelCase parameter name
+	FilterType string // "exact", "timestamp_range", "numeric_range", "has_value"
+	Comment    string // Documentation comment
+}
+
+// OrderByField represents a field that can be used for ordering
+type OrderByField struct {
+	GoName   string // PascalCase constant name (e.g., "ProcessingStatus")
+	DBColumn string // Database column name (e.g., "processing_status")
+}
+
+// buildFilterFieldsForFop creates filter field metadata for fop_gen.go
+func buildFilterFieldsForFop(columns []sqlparser.Column) []FilterFieldForFop {
+	var fields []FilterFieldForFop
+
+	for _, col := range columns {
+		if col.IsPrimaryKey {
+			continue
+		}
+
+		// Skip JSONB columns - filtering entire JSON blobs doesn't make sense
+		if strings.Contains(col.GoType, "json.RawMessage") || strings.Contains(col.DBType, "jsonb") {
+			continue
+		}
+
+		// Skip timestamp columns - they're handled specially
+		if col.Name == "created_at" || col.Name == "updated_at" {
+			fields = append(fields, FilterFieldForFop{
+				GoName:     sqlparser.ToPascalCase(col.Name),
+				DBColumn:   col.Name,
+				ParamName:  sqlparser.ToCamelCase(col.Name),
+				FilterType: "timestamp_range",
+				Comment:    "Filter by " + col.Name,
+			})
+			continue
+		}
+
+		// Use exact match filters for all other fields to match the repository filter definition
+		// The repository filter uses simple pointer fields like *string, *int, etc.
+		fields = append(fields, FilterFieldForFop{
+			GoName:     sqlparser.ToPascalCase(col.Name),
+			DBColumn:   col.Name,
+			ParamName:  sqlparser.ToCamelCase(col.Name),
+			FilterType: "exact",
+			Comment:    "Filter by " + col.Name,
+		})
+	}
+
+	return fields
+}
+
+// buildOrderByFields creates a list of fields that can be used for ordering
+func buildOrderByFields(columns []sqlparser.Column) []OrderByField {
+	var fields []OrderByField
+
+	for _, col := range columns {
+		// Skip PK and timestamps - they're already added as constants
+		if col.IsPrimaryKey || col.Name == "created_at" || col.Name == "updated_at" {
+			continue
+		}
+
+		fields = append(fields, OrderByField{
+			GoName:   sqlparser.ToPascalCase(col.Name),
+			DBColumn: col.Name,
+		})
+	}
+
+	return fields
+}
+
+// buildSearchableFields returns a list of text columns suitable for full-text search
+func buildSearchableFields(columns []sqlparser.Column) []string {
+	var fields []string
+
+	for _, col := range columns {
+		if strings.Contains(col.DBType, "varchar") || strings.Contains(col.DBType, "text") {
+			fields = append(fields, col.Name)
+		}
+	}
+
+	return fields
+}
+
+// generateTemplateFile renders a template and writes it to a file
+func generateTemplateFile(filepath string, tmplStr string, data interface{}) error {
+	tmpl, err := template.New("gen").Parse(tmplStr)
 	if err != nil {
 		return fmt.Errorf("parse template: %w", err)
 	}
@@ -253,6 +370,24 @@ func generateStoreFile(filepath string, data interface{}) error {
 		return fmt.Errorf("execute template: %w", err)
 	}
 
+	f.Close() // Close before running goimports
+
+	// Format and fix imports using goimports
+	if err := formatGoFile(filepath); err != nil {
+		// Don't fail generation if formatting fails, just log it
+		fmt.Printf("Warning: failed to format %s: %v\n", filepath, err)
+	}
+
+	return nil
+}
+
+// formatGoFile runs goimports on a Go file to fix imports and format code
+func formatGoFile(filepath string) error {
+	cmd := exec.Command("goimports", "-w", filepath)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("goimports failed: %w, output: %s", err, string(output))
+	}
 	return nil
 }
 

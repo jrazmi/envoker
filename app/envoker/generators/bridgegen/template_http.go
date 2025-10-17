@@ -27,10 +27,10 @@ func AddHttpRoutes(group *web.RouteGroup, cfg Config) {
 
 	// Standard CRUD routes
 	group.GET("{{.HTTPBasePath}}", b.httpList)
-	group.GET("{{.HTTPBasePath}}/{{"{{"}}.{{.PKURLParam}}{{"}}"}}", b.httpGetByID)
+	group.GET("{{printf "%s/{%s}" .HTTPBasePath .PKURLParam}}", b.httpGetByID)
 	group.POST("{{.HTTPBasePath}}", b.httpCreate)
-	group.PUT("{{.HTTPBasePath}}/{{"{{"}}.{{.PKURLParam}}{{"}}"}}", b.httpUpdate)
-	group.DELETE("{{.HTTPBasePath}}/{{"{{"}}.{{.PKURLParam}}{{"}}"}}", b.httpDelete)
+	group.PUT("{{printf "%s/{%s}" .HTTPBasePath .PKURLParam}}", b.httpUpdate)
+	group.DELETE("{{printf "%s/{%s}" .HTTPBasePath .PKURLParam}}", b.httpDelete)
 {{- range .ForeignKeys}}
 
 	// Foreign key route: {{.MethodName}}
@@ -47,7 +47,11 @@ func (b *bridge) httpList(ctx context.Context, r *http.Request) web.Encoder {
 		return errs.NewFieldErrors("page", err)
 	}
 
-	filter := MarshalFilterToRepository(parseFilter(qp))
+	filter, err := parseFilter(qp)
+	if err != nil {
+		return errs.Newf(errs.InvalidArgument, "invalid filter: %s", err)
+	}
+
 	orderBy := parseOrderBy(qp.Order)
 
 	records, pageInfo, err := b.{{.EntityNameLower}}Repository.List(ctx, filter, orderBy, page)
@@ -112,12 +116,15 @@ func (b *bridge) httpUpdate(ctx context.Context, r *http.Request) web.Encoder {
 
 	updateInput := MarshalUpdateToRepository(input)
 
-	record, err := b.{{.EntityNameLower}}Repository.Update(ctx, qpath.{{.PKGoName}}, updateInput)
+	err = b.{{.EntityNameLower}}Repository.Update(ctx, qpath.{{.PKGoName}}, updateInput)
 	if err != nil {
 		return errs.Newf(errs.Internal, "update {{.EntityNameLower}}: %s", err)
 	}
 
-	return MarshalToBridge(record)
+	return fopbridge.CodeResponse{
+		Code:    errs.OK.String(),
+		Message: "{{.EntityName}} updated successfully",
+	}
 }
 
 // httpDelete handles DELETE requests for removing a {{.EntityNameLower}}
@@ -163,7 +170,7 @@ func (b *bridge) {{.MethodName}}(ctx context.Context, r *http.Request) web.Encod
 
 	orderBy := parseOrderBy(qp.Order)
 
-	records, pageInfo, err := b.{{$.EntityNameLower}}Repository.List{{.FKGoName}}(ctx, qpath.{{.FKGoName}}, orderBy, page)
+	records, pageInfo, err := b.{{$.EntityNameLower}}Repository.ListBy{{.FKGoName}}(ctx, qpath.{{.FKGoName}}, orderBy, page)
 	if err != nil {
 		return errs.Newf(errs.Internal, "list {{$.EntityNamePlural}} by {{.FKGoName}}: %s", err)
 	}

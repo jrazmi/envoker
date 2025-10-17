@@ -1,6 +1,8 @@
 package repositorygen
 
-import "github.com/jrazmi/envoker/app/envoker/generators/sqlparser"
+import (
+	"github.com/jrazmi/envoker/app/generators/sqlparser"
+)
 
 // Config holds configuration for repository generation
 type Config struct {
@@ -32,6 +34,9 @@ type TemplateData struct {
 	PKParamName string // e.g., "taskID"
 	PKInCreate  bool   // True if PK is in CreateStruct
 
+	// Timestamp fields metadata
+	CreatedAtIsPointer bool // True if CreatedAt is *time.Time
+
 	// Columns and fields
 	Columns      []sqlparser.Column
 	EntityFields []FieldInfo // Fields for Entity struct
@@ -44,6 +49,10 @@ type TemplateData struct {
 
 	// Storer interface info
 	StorerInterfaceName string // e.g., "Storer"
+
+	// Schema features
+	HasStatusColumn bool // True if table has a status column for archive support
+	HasDeletedAt    bool // True if table has a deleted_at column
 
 	// File paths
 	ModelFilePath      string // Where to write model_gen.go

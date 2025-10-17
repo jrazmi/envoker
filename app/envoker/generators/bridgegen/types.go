@@ -14,6 +14,7 @@ type TemplateData struct {
 	RepoPackage    string // e.g., "tasksrepo"
 
 	// Entity naming
+	Entity           string // e.g., "Task" (alias for EntityName)
 	EntityName       string // e.g., "Task"
 	EntityNamePlural string // e.g., "Tasks"
 	EntityNameLower  string // e.g., "task"
@@ -42,6 +43,10 @@ type TemplateData struct {
 
 	// Module path
 	ModulePath string
+
+	// Schema features
+	BridgePackage   string // e.g., "tasksrepobridge"
+	HasStatusColumn bool   // True if table has a status column for archive support
 }
 
 // BridgeField represents a field in the bridge model

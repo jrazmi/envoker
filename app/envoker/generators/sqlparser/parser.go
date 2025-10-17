@@ -125,7 +125,24 @@ func extractColumns(sql string) ([]Column, error) {
 	lines := splitColumnDefinitions(content)
 
 	for _, line := range lines {
-		line = strings.TrimSpace(line)
+		// Handle multi-line chunks that may contain comments
+		// Split by newlines and process only the non-comment lines
+		subLines := strings.Split(line, "\n")
+		var cleanLine string
+		for _, subLine := range subLines {
+			subLine = strings.TrimSpace(subLine)
+			// Skip empty lines and comments
+			if subLine == "" || strings.HasPrefix(subLine, "--") {
+				continue
+			}
+			// Accumulate non-comment content
+			if cleanLine != "" {
+				cleanLine += " "
+			}
+			cleanLine += subLine
+		}
+
+		line = strings.TrimSpace(cleanLine)
 
 		// Skip empty lines
 		if line == "" {
@@ -166,13 +183,27 @@ func parseColumnDefinition(def string) (Column, error) {
 	// Type is second token (may include parameters like varchar(100))
 	col.DBType = parts[1]
 
-	// Handle type parameters
-	if strings.Contains(def, "(") && !strings.Contains(strings.ToUpper(def), "DEFAULT") {
-		// Extract full type including parameters
+	// Handle type parameters (e.g., varchar(100), numeric(10,2))
+	// But stop at keywords like NOT, NULL, REFERENCES, DEFAULT
+	if strings.HasSuffix(parts[1], "(") || (len(parts) > 2 && parts[2] == "(") {
+		// Type has parameters, extract them
 		typeStart := strings.Index(def, parts[1])
 		remaining := def[typeStart:]
-		if idx := strings.Index(remaining, ")"); idx != -1 {
-			col.DBType = remaining[:idx+1]
+
+		// Find the matching closing paren for this type
+		parenCount := 0
+		foundStart := false
+		for i, ch := range remaining {
+			if ch == '(' {
+				foundStart = true
+				parenCount++
+			} else if ch == ')' {
+				parenCount--
+				if foundStart && parenCount == 0 {
+					col.DBType = remaining[:i+1]
+					break
+				}
+			}
 		}
 	}
 
@@ -311,11 +342,41 @@ func extractPrimaryKey(sql string, columns []Column) (PrimaryKeyInfo, error) {
 func extractForeignKeys(sql string) ([]ForeignKey, error) {
 	var foreignKeys []ForeignKey
 
-	// Match: FOREIGN KEY (column) REFERENCES schema.table (ref_column)
-	re := regexp.MustCompile(`(?i)FOREIGN KEY\s*\(([^)]+)\)\s*REFERENCES\s+(?:(\w+)\.)?(\w+)\s*\(([^)]+)\)(?:\s+ON\s+DELETE\s+(CASCADE|SET NULL|RESTRICT|NO ACTION))?(?:\s+ON\s+UPDATE\s+(CASCADE|SET NULL|RESTRICT|NO ACTION))?`)
+	// Match explicit: FOREIGN KEY (column) REFERENCES schema.table (ref_column)
+	explicitRe := regexp.MustCompile(`(?i)FOREIGN KEY\s*\(([^)]+)\)\s*REFERENCES\s+(?:(\w+)\.)?(\w+)\s*\(([^)]+)\)(?:\s+ON\s+DELETE\s+(CASCADE|SET NULL|RESTRICT|NO ACTION))?(?:\s+ON\s+UPDATE\s+(CASCADE|SET NULL|RESTRICT|NO ACTION))?`)
 
-	matches := re.FindAllStringSubmatch(sql, -1)
+	matches := explicitRe.FindAllStringSubmatch(sql, -1)
 	for _, match := range matches {
+		fk := ForeignKey{
+			ColumnName: strings.TrimSpace(match[1]),
+			RefSchema:  match[2],
+			RefTable:   match[3],
+			RefColumn:  strings.TrimSpace(match[4]),
+			OnDelete:   match[5],
+			OnUpdate:   match[6],
+		}
+
+		if fk.RefSchema == "" {
+			fk.RefSchema = "public"
+		}
+
+		if fk.OnDelete == "" {
+			fk.OnDelete = "NO ACTION"
+		}
+
+		if fk.OnUpdate == "" {
+			fk.OnUpdate = "NO ACTION"
+		}
+
+		foreignKeys = append(foreignKeys, fk)
+	}
+
+	// Match inline: column_name type REFERENCES schema.table(ref_column)
+	// Example: task_id uuid NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE
+	inlineRe := regexp.MustCompile(`(?i)(\w+)\s+\w+(?:\([^)]*\))?\s+(?:NOT\s+NULL\s+)?REFERENCES\s+(?:(\w+)\.)?(\w+)\s*\(([^)]+)\)(?:\s+ON\s+DELETE\s+(CASCADE|SET NULL|RESTRICT|NO ACTION))?(?:\s+ON\s+UPDATE\s+(CASCADE|SET NULL|RESTRICT|NO ACTION))?`)
+
+	inlineMatches := inlineRe.FindAllStringSubmatch(sql, -1)
+	for _, match := range inlineMatches {
 		fk := ForeignKey{
 			ColumnName: strings.TrimSpace(match[1]),
 			RefSchema:  match[2],

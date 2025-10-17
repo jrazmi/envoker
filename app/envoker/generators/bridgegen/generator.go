@@ -3,11 +3,12 @@ package bridgegen
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
 
-	"github.com/jrazmi/envoker/app/envoker/generators/sqlparser"
+	"github.com/jrazmi/envoker/app/generators/sqlparser"
 )
 
 // Generate creates bridge files from a parsed SQL schema
@@ -23,7 +24,7 @@ func Generate(parseResult *sqlparser.ParseResult, config Config) (*GenerateResul
 
 	// Determine output paths
 	bridgeDir := filepath.Join(config.OutputDir, parseResult.Naming.BridgePath)
-	bridgeFile := filepath.Join(bridgeDir, "bridge_gen.go")
+	bridgeInitFile := filepath.Join(bridgeDir, "bridge.go")
 	httpFile := filepath.Join(bridgeDir, "http_gen.go")
 	modelFile := filepath.Join(bridgeDir, "model_gen.go")
 	marshalFile := filepath.Join(bridgeDir, "marshal_gen.go")
@@ -31,7 +32,7 @@ func Generate(parseResult *sqlparser.ParseResult, config Config) (*GenerateResul
 
 	// Check for existing files
 	if !config.ForceOverwrite {
-		for _, file := range []string{bridgeFile, httpFile, modelFile, marshalFile, fopFile} {
+		for _, file := range []string{httpFile, modelFile, marshalFile, fopFile} {
 			if fileExists(file) {
 				result.Warnings = append(result.Warnings, fmt.Sprintf("File exists: %s (use -force to overwrite)", file))
 				return result, fmt.Errorf("file already exists: %s", file)
@@ -45,12 +46,17 @@ func Generate(parseResult *sqlparser.ParseResult, config Config) (*GenerateResul
 		return result, fmt.Errorf("create directory: %w", err)
 	}
 
-	// Generate all files
-	if err := generateFile(bridgeFile, BridgeTemplate, templateData); err != nil {
-		result.Errors = append(result.Errors, err)
-		return result, fmt.Errorf("generate bridge file: %w", err)
+	// Generate bridge.go ONLY if it doesn't exist (never overwrite)
+	if !fileExists(bridgeInitFile) {
+		if err := generateFile(bridgeInitFile, BridgeInitTemplate, templateData); err != nil {
+			result.Errors = append(result.Errors, err)
+			return result, fmt.Errorf("generate bridge init file: %w", err)
+		}
+		result.BridgeFile = bridgeInitFile
+	} else {
+		result.Warnings = append(result.Warnings, fmt.Sprintf("Skipped: %s (already exists, will not overwrite)", bridgeInitFile))
+		result.BridgeFile = bridgeInitFile
 	}
-	result.BridgeFile = bridgeFile
 
 	if err := generateFile(httpFile, HTTPTemplate, templateData); err != nil {
 		result.Errors = append(result.Errors, err)
@@ -87,6 +93,7 @@ func prepareTemplateData(parseResult *sqlparser.ParseResult, config Config) (*Te
 	data := &TemplateData{
 		PackageName:      naming.BridgePackage,
 		RepoPackage:      naming.PackageName,
+		Entity:           naming.EntityName,
 		EntityName:       naming.EntityName,
 		EntityNamePlural: naming.EntityNamePlural,
 		EntityNameLower:  naming.EntityNameLower,
@@ -100,6 +107,8 @@ func prepareTemplateData(parseResult *sqlparser.ParseResult, config Config) (*Te
 		PKParamName:      naming.PKParamName,
 		PKURLParam:       naming.PKURLParam,
 		ModulePath:       config.ModulePath,
+		BridgePackage:    naming.BridgePackage,
+		HasStatusColumn:  sqlparser.HasStatusColumn(schema),
 	}
 
 	// Build field lists
@@ -203,6 +212,16 @@ func buildFilterBridgeFields(columns []sqlparser.Column) []BridgeField {
 			continue
 		}
 
+		// Skip primary keys (they're not filterable in the repository filter)
+		if col.IsPrimaryKey {
+			continue
+		}
+
+		// Skip JSONB fields (not filterable - no schema)
+		if strings.Contains(col.GoType, "json.RawMessage") || strings.Contains(col.DBType, "jsonb") {
+			continue
+		}
+
 		goType := col.GoType
 		if !strings.HasPrefix(goType, "*") && !strings.HasPrefix(goType, "[]") {
 			goType = "*" + goType
@@ -255,7 +274,11 @@ func toKebabCase(s string) string {
 
 // generateFile renders a template and writes it to a file
 func generateFile(filepath string, tmplStr string, data interface{}) error {
-	tmpl, err := template.New("gen").Parse(tmplStr)
+	funcMap := template.FuncMap{
+		"Contains": strings.Contains,
+	}
+
+	tmpl, err := template.New("gen").Funcs(funcMap).Parse(tmplStr)
 	if err != nil {
 		return fmt.Errorf("parse template: %w", err)
 	}
@@ -270,6 +293,24 @@ func generateFile(filepath string, tmplStr string, data interface{}) error {
 		return fmt.Errorf("execute template: %w", err)
 	}
 
+	f.Close() // Close before running goimports
+
+	// Format and fix imports using goimports
+	if err := formatGoFile(filepath); err != nil {
+		// Don't fail generation if formatting fails, just log it
+		fmt.Printf("Warning: failed to format %s: %v\n", filepath, err)
+	}
+
+	return nil
+}
+
+// formatGoFile runs goimports on a Go file to fix imports and format code
+func formatGoFile(filepath string) error {
+	cmd := exec.Command("goimports", "-w", filepath)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("goimports failed: %w, output: %s", err, string(output))
+	}
 	return nil
 }
 

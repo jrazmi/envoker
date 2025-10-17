@@ -6,11 +6,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/jrazmi/envoker/app/envoker/generators/bridgegen"
-	"github.com/jrazmi/envoker/app/envoker/generators/orchestrator"
-	"github.com/jrazmi/envoker/app/envoker/generators/pgxstores"
-	"github.com/jrazmi/envoker/app/envoker/generators/repositorygen"
-	"github.com/jrazmi/envoker/app/envoker/generators/sqlparser"
+	"github.com/jrazmi/envoker/app/generators/bridgegen"
+	"github.com/jrazmi/envoker/app/generators/orchestrator"
+	"github.com/jrazmi/envoker/app/generators/pgxstores"
+	"github.com/jrazmi/envoker/app/generators/repositorygen"
+	"github.com/jrazmi/envoker/app/generators/sqlparser"
 )
 
 func main() {

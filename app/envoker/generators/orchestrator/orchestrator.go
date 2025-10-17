@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jrazmi/envoker/app/envoker/generators/bridgegen"
-	"github.com/jrazmi/envoker/app/envoker/generators/pgxstores"
-	"github.com/jrazmi/envoker/app/envoker/generators/repositorygen"
-	"github.com/jrazmi/envoker/app/envoker/generators/sqlparser"
+	"github.com/jrazmi/envoker/app/generators/bridgegen"
+	"github.com/jrazmi/envoker/app/generators/pgxstores"
+	"github.com/jrazmi/envoker/app/generators/repositorygen"
+	"github.com/jrazmi/envoker/app/generators/sqlparser"
 )
 
 // Config holds configuration for the orchestrator

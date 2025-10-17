@@ -308,3 +308,49 @@ func ValidateSchema(schema *TableSchema) []error {
 
 	return errors
 }
+
+// ValidateTimestamps checks if the schema has required timestamp columns
+func ValidateTimestamps(schema *TableSchema) []string {
+	var warnings []string
+
+	hasCreatedAt := false
+	hasUpdatedAt := false
+
+	for _, col := range schema.Columns {
+		if col.Name == "created_at" {
+			hasCreatedAt = true
+		}
+		if col.Name == "updated_at" {
+			hasUpdatedAt = true
+		}
+	}
+
+	if !hasCreatedAt {
+		warnings = append(warnings, "table missing 'created_at' timestamp column (recommended)")
+	}
+	if !hasUpdatedAt {
+		warnings = append(warnings, "table missing 'updated_at' timestamp column (recommended)")
+	}
+
+	return warnings
+}
+
+// HasStatusColumn checks if the schema has a status column for archive support
+func HasStatusColumn(schema *TableSchema) bool {
+	for _, col := range schema.Columns {
+		if col.Name == "status" {
+			return true
+		}
+	}
+	return false
+}
+
+// HasDeletedAtColumn checks if the schema has a deleted_at column for soft delete support
+func HasDeletedAtColumn(schema *TableSchema) bool {
+	for _, col := range schema.Columns {
+		if col.Name == "deleted_at" {
+			return true
+		}
+	}
+	return false
+}

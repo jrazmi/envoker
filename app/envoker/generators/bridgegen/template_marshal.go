@@ -43,13 +43,4 @@ func MarshalUpdateToRepository(input Update{{.EntityName}}Input) {{.RepoPackage}
 {{- end}}
 	}
 }
-
-// MarshalFilterToRepository converts a bridge Filter to repository Filter
-func MarshalFilterToRepository(filter Filter{{.EntityName}}) {{.RepoPackage}}.Filter{{.EntityName}} {
-	return {{.RepoPackage}}.Filter{{.EntityName}}{
-{{- range .FilterFields}}
-		{{.RepoName}}: filter.{{.BridgeName}},
-{{- end}}
-	}
-}
 `

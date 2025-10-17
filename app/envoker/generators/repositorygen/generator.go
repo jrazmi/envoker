@@ -3,11 +3,12 @@ package repositorygen
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
 
-	"github.com/jrazmi/envoker/app/envoker/generators/sqlparser"
+	"github.com/jrazmi/envoker/app/generators/sqlparser"
 )
 
 // Generate creates repository files from a parsed SQL schema
@@ -24,20 +25,20 @@ func Generate(parseResult *sqlparser.ParseResult, config Config) (*GenerateResul
 	// Determine output paths
 	repoDir := filepath.Join(config.OutputDir, parseResult.Naming.RepoPath)
 	modelFile := filepath.Join(repoDir, "model_gen.go")
-	repoFile := filepath.Join(repoDir, "repository_gen.go")
+	repoFile := filepath.Join(repoDir, "repo.go")
+	repoGenFile := filepath.Join(repoDir, "repo_gen.go")
+	fopGenFile := filepath.Join(repoDir, "fop_gen.go")
 
 	templateData.ModelFilePath = modelFile
 	templateData.RepositoryFilePath = repoFile
 
 	// Check for existing files and prompt if needed
 	if !config.ForceOverwrite {
-		if fileExists(modelFile) {
-			result.Warnings = append(result.Warnings, fmt.Sprintf("File exists: %s (use -force to overwrite)", modelFile))
-			return result, fmt.Errorf("file already exists: %s", modelFile)
-		}
-		if fileExists(repoFile) {
-			result.Warnings = append(result.Warnings, fmt.Sprintf("File exists: %s (use -force to overwrite)", repoFile))
-			return result, fmt.Errorf("file already exists: %s", repoFile)
+		for _, file := range []string{modelFile, repoGenFile, fopGenFile} {
+			if fileExists(file) {
+				result.Warnings = append(result.Warnings, fmt.Sprintf("File exists: %s (use -force to overwrite)", file))
+				return result, fmt.Errorf("file already exists: %s", file)
+			}
 		}
 	}
 
@@ -54,12 +55,29 @@ func Generate(parseResult *sqlparser.ParseResult, config Config) (*GenerateResul
 	}
 	result.ModelFile = modelFile
 
-	// Generate repository_gen.go
-	if err := generateFile(repoFile, RepositoryTemplate, templateData); err != nil {
-		result.Errors = append(result.Errors, err)
-		return result, fmt.Errorf("generate repository file: %w", err)
+	// Generate repo.go ONLY if it doesn't exist (never overwrite)
+	if !fileExists(repoFile) {
+		if err := generateFile(repoFile, RepoTemplate, templateData); err != nil {
+			result.Errors = append(result.Errors, err)
+			return result, fmt.Errorf("generate repository file: %w", err)
+		}
+		result.RepositoryFile = repoFile
+	} else {
+		result.Warnings = append(result.Warnings, fmt.Sprintf("Skipped: %s (already exists, will not overwrite)", repoFile))
+		result.RepositoryFile = repoFile
 	}
-	result.RepositoryFile = repoFile
+
+	// Generate repo_gen.go (always regenerate)
+	if err := generateFile(repoGenFile, RepoGenTemplate, templateData); err != nil {
+		result.Errors = append(result.Errors, err)
+		return result, fmt.Errorf("generate repo_gen file: %w", err)
+	}
+
+	// Generate fop_gen.go (always regenerate)
+	if err := generateFile(fopGenFile, RepoFopGenTemplate, templateData); err != nil {
+		result.Errors = append(result.Errors, err)
+		return result, fmt.Errorf("generate fop_gen file: %w", err)
+	}
 
 	return result, nil
 }
@@ -83,6 +101,8 @@ func prepareTemplateData(parseResult *sqlparser.ParseResult, config Config) (*Te
 		PKParamName:         naming.PKParamName,
 		StorerInterfaceName: "Storer",
 		Columns:             schema.Columns,
+		HasStatusColumn:     sqlparser.HasStatusColumn(schema),
+		HasDeletedAt:        sqlparser.HasDeletedAtColumn(schema),
 	}
 
 	// Build field lists
@@ -96,6 +116,15 @@ func prepareTemplateData(parseResult *sqlparser.ParseResult, config Config) (*Te
 	for _, f := range data.CreateFields {
 		if f.DBColumn == data.PKColumn {
 			data.PKInCreate = true
+			break
+		}
+	}
+
+	// Check if CreatedAt is a pointer
+	data.CreatedAtIsPointer = false
+	for _, col := range schema.Columns {
+		if col.Name == "created_at" && strings.HasPrefix(col.GoType, "*") {
+			data.CreatedAtIsPointer = true
 			break
 		}
 	}
@@ -276,7 +305,14 @@ func collectImports(columns []sqlparser.Column) []string {
 
 // generateFile renders a template and writes it to a file
 func generateFile(filepath string, tmplStr string, data interface{}) error {
-	tmpl, err := template.New("gen").Parse(tmplStr)
+	funcMap := template.FuncMap{
+		"ToPascalCase": sqlparser.ToPascalCase,
+		"ToCamelCase":  sqlparser.ToCamelCase,
+		"TrimPrefix":   strings.TrimPrefix,
+		"Contains":     strings.Contains,
+	}
+
+	tmpl, err := template.New("gen").Funcs(funcMap).Parse(tmplStr)
 	if err != nil {
 		return fmt.Errorf("parse template: %w", err)
 	}
@@ -291,6 +327,24 @@ func generateFile(filepath string, tmplStr string, data interface{}) error {
 		return fmt.Errorf("execute template: %w", err)
 	}
 
+	f.Close() // Close before running goimports
+
+	// Format and fix imports using goimports
+	if err := formatGoFile(filepath); err != nil {
+		// Don't fail generation if formatting fails, just log it
+		fmt.Printf("Warning: failed to format %s: %v\n", filepath, err)
+	}
+
+	return nil
+}
+
+// formatGoFile runs goimports on a Go file to fix imports and format code
+func formatGoFile(filepath string) error {
+	cmd := exec.Command("goimports", "-w", filepath)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("goimports failed: %w, output: %s", err, string(output))
+	}
 	return nil
 }
 

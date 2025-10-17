@@ -11,7 +11,7 @@ import (
 // {{.EntityName}} represents the bridge model for {{.EntityNameLower}}
 type {{.EntityName}} struct {
 {{- range .EntityFields}}
-	{{.BridgeName}} {{.GoType}} ` + "`json:\"{{.JSONName}}{{if .OmitEmpty}},omitempty{{end}}\"`" + `
+	{{.BridgeName}} {{.GoType}} ` + "`json:\"{{.DBColumn}}{{if .OmitEmpty}},omitempty{{end}}\"`" + `
 {{- end}}
 }
 
@@ -24,7 +24,7 @@ func (t {{.EntityName}}) Encode() ([]byte, string, error) {
 // Create{{.EntityName}}Input represents the input for creating a new {{.EntityNameLower}}
 type Create{{.EntityName}}Input struct {
 {{- range .CreateFields}}
-	{{.BridgeName}} {{.GoType}} ` + "`json:\"{{.JSONName}}{{if .OmitEmpty}},omitempty{{end}}\"`" + `
+	{{.BridgeName}} {{.GoType}} ` + "`json:\"{{.DBColumn}}{{if .OmitEmpty}},omitempty{{end}}\"`" + `
 {{- end}}
 }
 
@@ -36,19 +36,12 @@ func (c *Create{{.EntityName}}Input) Decode(data []byte) error {
 // Update{{.EntityName}}Input represents the input for updating a {{.EntityNameLower}}
 type Update{{.EntityName}}Input struct {
 {{- range .UpdateFields}}
-	{{.BridgeName}} {{.GoType}} ` + "`json:\"{{.JSONName}},omitempty\"`" + `
+	{{.BridgeName}} {{.GoType}} ` + "`json:\"{{.DBColumn}},omitempty\"`" + `
 {{- end}}
 }
 
 // Decode implements the decoder interface
 func (u *Update{{.EntityName}}Input) Decode(data []byte) error {
 	return json.Unmarshal(data, u)
-}
-
-// Filter{{.EntityName}} represents the filter for querying {{.EntityNamePlural}}
-type Filter{{.EntityName}} struct {
-{{- range .FilterFields}}
-	{{.BridgeName}} {{.GoType}} ` + "`json:\"{{.JSONName}},omitempty\"`" + `
-{{- end}}
 }
 `
