@@ -82,8 +82,8 @@ func extractFieldsFromRepo(cfg Config) map[string][]Field {
 	}
 	fmt.Printf("Current directory: %s\n", cwd)
 
-	// From core/repositories/usersrepo/pgxstore -> core/repositories/usersrepo
-	repoDir := ".."
+	// From core/repositories/usersrepo/stores/userspgxstore -> core/repositories/usersrepo
+	repoDir := "../.."
 	absRepoDir, err := filepath.Abs(repoDir)
 	if err != nil {
 		panic(err)
@@ -259,8 +259,9 @@ func generateStore(cfg Config, fields map[string][]Field) {
 }
 
 func determineRepoPackage() string {
-	// Get parent directory name (e.g., "usersrepo")
-	parentDir, err := filepath.Abs("..")
+	// Get parent parent directory name (e.g., "usersrepo")
+	// From stores/userspgxstore -> usersrepo
+	parentDir, err := filepath.Abs("../..")
 	if err != nil {
 		panic(err)
 	}
@@ -286,10 +287,12 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jrazmi/envoker/core/repositories/{{.RepoPackage}}"
+	"github.com/jrazmi/envoker/core/scaffolding/fop"
 	"github.com/jrazmi/envoker/infrastructure/databases/postgresdb"
+	"github.com/jrazmi/envoker/sdk/cryptids"
 )
 
 // Get retrieves a single {{.Entity}} by ID
@@ -309,7 +312,7 @@ func (s *{{.StoreType}}) Get(ctx context.Context, ID string, filter {{.RepoPacka
 	record, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[{{.RepoPackage}}.{{.Entity}}])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return {{.RepoPackage}}.{{.Entity}}{}, {{.RepoPackage}}.ErrNotFound
+			return {{.RepoPackage}}.{{.Entity}}{}, {{.RepoPackage}}.Err{{.Entity}}NotFound
 		}
 		return {{.RepoPackage}}.{{.Entity}}{}, postgresdb.HandlePgError(err)
 	}
@@ -318,31 +321,38 @@ func (s *{{.StoreType}}) Get(ctx context.Context, ID string, filter {{.RepoPacka
 }
 
 // Create inserts a new {{.Entity}}
-func (s *{{.StoreType}}) Create(ctx context.Context, input {{.RepoPackage}}.{{.Create}}) ({{.RepoPackage}}.{{.Entity}}, error) {
-	query := ` + "`INSERT INTO {{.Schema}}.{{.Table}} ({{range $i, $f := .CreateFields}}{{if $i}}, {{end}}{{$f.DBColumn}}{{end}}) VALUES ({{range $i, $f := .CreateFields}}{{if $i}}, {{end}}@{{$f.DBColumn}}{{end}}) RETURNING *`" + `
-	
+func (s *{{.StoreType}}) Create(ctx context.Context, input *{{.RepoPackage}}.{{.Create}}) ({{.RepoPackage}}.{{.Entity}}, error) {
+	// Generate ID using cryptids
+	id, err := cryptids.GenerateID()
+	if err != nil {
+		return {{.RepoPackage}}.{{.Entity}}{}, fmt.Errorf("generate id: %w", err)
+	}
+
+	query := ` + "`INSERT INTO {{.Schema}}.{{.Table}} ({{.PK}}, {{range $i, $f := .CreateFields}}{{if $i}}, {{end}}{{$f.DBColumn}}{{end}}) VALUES (@{{.PK}}, {{range $i, $f := .CreateFields}}{{if $i}}, {{end}}@{{$f.DBColumn}}{{end}}) RETURNING *`" + `
+
 	args := pgx.NamedArgs{
+		"{{.PK}}": id,
 {{- range .CreateFields}}
 		"{{.DBColumn}}": input.{{.Name}},
 {{- end}}
 	}
-	
+
 	rows, err := s.pool.Query(ctx, query, args)
 	if err != nil {
 		return {{.RepoPackage}}.{{.Entity}}{}, postgresdb.HandlePgError(err)
 	}
 	defer rows.Close()
-	
+
 	record, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[{{.RepoPackage}}.{{.Entity}}])
 	if err != nil {
 		return {{.RepoPackage}}.{{.Entity}}{}, postgresdb.HandlePgError(err)
 	}
-	
+
 	return record, nil
 }
 
 // Update modifies an existing {{.Entity}}
-func (s *{{.StoreType}}) Update(ctx context.Context, ID string, input {{.RepoPackage}}.{{.Update}}) error {
+func (s *{{.StoreType}}) Update(ctx context.Context, ID string, input *{{.RepoPackage}}.{{.Update}}) error {
 	var fields []string
 	data := pgx.NamedArgs{
 		"{{.PK}}": ID,
@@ -387,20 +397,60 @@ func (s *{{.StoreType}}) Update(ctx context.Context, ID string, input {{.RepoPac
 // Delete removes a {{.Entity}}
 func (s *{{.StoreType}}) Delete(ctx context.Context, ID string) error {
 	query := ` + "`DELETE FROM {{.Schema}}.{{.Table}} WHERE {{.PK}} = @{{.PK}}`" + `
-	
+
 	args := pgx.NamedArgs{
 		"{{.PK}}": ID,
 	}
-	
+
 	result, err := s.pool.Exec(ctx, query, args)
 	if err != nil {
 		return postgresdb.HandlePgError(err)
 	}
-	
+
 	if result.RowsAffected() == 0 {
 		return fmt.Errorf("{{.Entity}} not found: %s", ID)
 	}
-	
+
+	return nil
+}
+
+// List retrieves multiple {{.Entity}} records with filtering, ordering, and pagination
+func (s *{{.StoreType}}) List(ctx context.Context, filter {{.RepoPackage}}.{{.Filter}}, orderBy fop.By, page fop.PageStringCursor) ([]{{.RepoPackage}}.{{.Entity}}, error) {
+	// TODO: Implement filtering, ordering, and pagination logic
+	query := ` + "`SELECT {{range $i, $f := .EntityFields}}{{if $i}}, {{end}}{{$f.DBColumn}}{{end}} FROM {{.Schema}}.{{.Table}} LIMIT 100`" + `
+
+	rows, err := s.pool.Query(ctx, query)
+	if err != nil {
+		return nil, postgresdb.HandlePgError(err)
+	}
+	defer rows.Close()
+
+	records, err := pgx.CollectRows(rows, pgx.RowToStructByName[{{.RepoPackage}}.{{.Entity}}])
+	if err != nil {
+		return nil, postgresdb.HandlePgError(err)
+	}
+
+	return records, nil
+}
+
+// Archive soft-deletes a {{.Entity}} by setting archived_at
+func (s *{{.StoreType}}) Archive(ctx context.Context, ID string) error {
+	query := ` + "`UPDATE {{.Schema}}.{{.Table}} SET archived_at = @archived_at WHERE {{.PK}} = @{{.PK}}`" + `
+
+	args := pgx.NamedArgs{
+		"{{.PK}}":        ID,
+		"archived_at": time.Now(),
+	}
+
+	result, err := s.pool.Exec(ctx, query, args)
+	if err != nil {
+		return postgresdb.HandlePgError(err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("{{.Entity}} not found: %s", ID)
+	}
+
 	return nil
 }
 `

@@ -12,24 +12,11 @@ var (
 )
 
 type CreateUser struct {
-	UserID string  `db:"user_id"`
-	Email  *string `db:"email"`
-}
-
-func (c *CreateUser) GetID() *string {
-	return &c.UserID
-}
-func (c *CreateUser) SetID(ID string) {
-	c.UserID = ID
+	Email *string `db:"email"`
 }
 
 type UpdateUser struct {
-	UserID *string `db:"user_id"`
-	Email  *string `db:"email"`
-}
-
-func (u *UpdateUser) GetID() *string {
-	return u.UserID
+	Email *string `db:"email"`
 }
 
 type User struct {
@@ -42,27 +29,17 @@ type UserFilter struct {
 }
 
 type UserStorer interface {
-	repositories.Reader[User, UserFilter]
-	repositories.Writer[User, *CreateUser]
-	repositories.Updater[User, *UpdateUser]
-	repositories.Deleter
-	repositories.Archiver
+	repositories.Store[User, string, *CreateUser, *UpdateUser, UserFilter]
 }
 
 type UserRepository struct {
 	log *logger.Logger
-	repositories.Repository[User, *CreateUser, *UpdateUser, UserFilter]
+	repositories.Store[User, string, *CreateUser, *UpdateUser, UserFilter]
 }
 
 func NewUserRepository(log *logger.Logger, storer UserStorer) *UserRepository {
 	return &UserRepository{
-		Repository: repositories.Repository[User, *CreateUser, *UpdateUser, UserFilter]{
-			Reader:   storer,
-			Writer:   storer,
-			Updater:  storer,
-			Deleter:  storer,
-			Archiver: storer,
-		},
-		log: log,
+		Store: storer,
+		log:   log,
 	}
 }
