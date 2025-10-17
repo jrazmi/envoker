@@ -54,12 +54,12 @@ func (b *bridge) httpList(ctx context.Context, r *http.Request) web.Encoder {
 
 	orderBy := parseOrderBy(qp.Order)
 
-	records, pageInfo, err := b.{{.EntityNameLower}}Repository.List(ctx, filter, orderBy, page)
+	records, pagination, err := b.{{.EntityNameLower}}Repository.List(ctx, filter, orderBy, page)
 	if err != nil {
 		return errs.Newf(errs.Internal, "list {{.EntityNamePlural}}: %s", err)
 	}
 
-	return fopbridge.NewPaginatedResultStringCursor(MarshalListToBridge(records), pageInfo)
+	return fopbridge.NewPaginatedResult(MarshalListToBridge(records), pagination)
 }
 
 // httpGetByID handles GET requests for retrieving a specific {{.EntityNameLower}} by ID
@@ -170,12 +170,12 @@ func (b *bridge) {{.MethodName}}(ctx context.Context, r *http.Request) web.Encod
 
 	orderBy := parseOrderBy(qp.Order)
 
-	records, pageInfo, err := b.{{$.EntityNameLower}}Repository.ListBy{{.FKGoName}}(ctx, qpath.{{.FKGoName}}, orderBy, page)
+	records, pagination, err := b.{{$.EntityNameLower}}Repository.ListBy{{.FKGoName}}(ctx, qpath.{{.FKGoName}}, orderBy, page)
 	if err != nil {
 		return errs.Newf(errs.Internal, "list {{$.EntityNamePlural}} by {{.FKGoName}}: %s", err)
 	}
 
-	return fopbridge.NewPaginatedResultStringCursor(MarshalListToBridge(records), pageInfo)
+	return fopbridge.NewPaginatedResult(MarshalListToBridge(records), pagination)
 }
 {{- end}}
 `
