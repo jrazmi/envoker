@@ -37,7 +37,7 @@ type Pool = pgxpool.Pool
 
 // Options represents the exportable database configuration
 type Options struct {
-	DatabaseURL string        `env:"PG_DATABASE_URL" default:"postgres://postgres:admin@localhost:5432/envoker?sslmode=disable"`
+	DatabaseURL string        `env:"PG_DATABASE_URL" default:"postgres://postgres:admin@localhost:5432/postgres?sslmode=disable"`
 	MaxConns    int           `env:"PG_DATABASE_MAX_CONNS" default:"25"`
 	MinConns    int           `env:"PG_DATABASE_MIN_CONNS" default:"5"`
 	MaxLifetime time.Duration `env:"PG_DATABASE_MAX_LIFETIME" default:"1h"`

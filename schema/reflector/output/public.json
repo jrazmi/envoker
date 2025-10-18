@@ -1,9 +1,9 @@
 {
   "version": "1.0",
   "source": "postgres",
-  "database": "envoker",
+  "database": "postgres",
   "schema_name": "public",
-  "reflected_at": "2025-10-18T11:58:20.44076-07:00",
+  "reflected_at": "2025-10-18T12:26:23.038668-07:00",
   "tables": {
     "schema_migrations": {
       "table_name": "schema_migrations",

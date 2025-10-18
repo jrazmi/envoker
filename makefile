@@ -4,7 +4,7 @@ TOOLING_PATH = ./app/tooling
 
 NAMESPACE := envoker
 VERSION := 0.0.1
-
+PG_DEFAULT=postgres
 NAME=envoker
 APP=app
 APP_IMAGE := $(NAME)/$(APP):$(VERSION)
@@ -33,7 +33,7 @@ tidy:
 # Drop and recreate database schema
 db-reset-local:
 	@echo "🗑️  Dropping and recreating public schema..."
-	@docker exec $(NAME)-postgres psql -U postgres -d $(NAME) -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+	@docker exec $(NAME)-postgres psql -U postgres -d $(PG_DEFAULT) -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 
 # Reflect database schema to JSON
 db-reflect:
@@ -111,7 +111,7 @@ dev-data-down:
 	docker-compose -p envoker -f workshop/dev/envoker-local-compose.yml down
 
 dev-psql:
-	PGPASSWORD=admin psql -h localhost -p 5432 -U postgres -d envoker
+	PGPASSWORD=admin psql -h localhost -p 5432 -U postgres -d $(PG_DEFAULT)
 
 .PHONY: migrate
 migrate: ## Run database migrations

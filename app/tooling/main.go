@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -37,24 +36,11 @@ func processCommands(ctx context.Context, log *logger.Logger, command string, ar
 		}
 		return nil
 
-	// case "seed":
-	// 	log.InfoContext(ctx, "running seed")
-	// 	if err := migrate.Seed(ctx, pg); err != nil {
-	// 		return fmt.Errorf("seed failed: %w", err)
-	// 	}
-	// 	log.InfoContext(ctx, "seed completed successfully")
-	// 	return nil
-
-	// case "migrate-seed":
-	// 	// ... runs both
-
-	// 	// ... other cases
 	default:
 		printHelp()
 		return nil
 	}
 
-	return errors.New("invalid command, use --help to see options")
 }
 func printHelp() {
 	fmt.Println("Available commands:")
