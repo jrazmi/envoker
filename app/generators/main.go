@@ -1,13 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/jrazmi/envoker/app/generators/orchestrator"
-	"github.com/jrazmi/envoker/app/generators/pgxstores"
 	"github.com/jrazmi/envoker/app/generators/schema"
 )
 
@@ -21,14 +22,6 @@ func main() {
 	command := os.Args[1]
 
 	switch command {
-	case "pgxstore":
-		runPgxStore(os.Args[2:])
-	case "repositorygen":
-		runRepositoryGen(os.Args[2:])
-	case "storegen":
-		runStoreGen(os.Args[2:])
-	case "bridgegen":
-		runBridgeGen(os.Args[2:])
 	case "generate", "generate-all", "all":
 		runGenerateAll(os.Args[2:])
 	case "help", "-h", "--help":
@@ -40,70 +33,17 @@ func main() {
 	}
 }
 
-func runPgxStore(args []string) {
-	fs := flag.NewFlagSet("pgxstore", flag.ExitOnError)
-
-	entity := fs.String("entity", "", "Entity type name (e.g., User)")
-	table := fs.String("table", "", "Database table name")
-	schema := fs.String("schema", "public", "Database schema")
-	pk := fs.String("pk", "id", "Primary key field name")
-	modulePath := fs.String("module", "github.com/jrazmi/envoker", "Go module path")
-
-	fs.Parse(args)
-
-	// Validate required flags
-	if *entity == "" {
-		fmt.Println("Error: -entity flag is required")
-		fs.PrintDefaults()
-		os.Exit(1)
-	}
-	if *table == "" {
-		fmt.Println("Error: -table flag is required")
-		fs.PrintDefaults()
-		os.Exit(1)
-	}
-	if *pk == "" {
-		fmt.Println("Error: -pk flag is required")
-		fs.PrintDefaults()
-		os.Exit(1)
-	}
-
-	err := pgxstores.Generate(*entity, *table, *schema, *pk, *modulePath)
-	if err != nil {
-		fmt.Printf("Error generating store: %v\n", err)
-		os.Exit(1)
-	}
-}
-
-func runRepositoryGen(args []string) {
-	fmt.Println("Error: repositorygen command has been deprecated.")
-	fmt.Println("The SQL parser has been removed. Please use the 'generate' command with JSON schema instead:")
-	fmt.Println("  generator generate -json=schema/reflector/output/public.json -table=<table_name>")
-	os.Exit(1)
-}
-
-func runStoreGen(args []string) {
-	fmt.Println("Error: storegen command has been deprecated.")
-	fmt.Println("The SQL parser has been removed. Please use the 'generate' command with JSON schema instead:")
-	fmt.Println("  generator generate -json=schema/reflector/output/public.json -table=<table_name>")
-	os.Exit(1)
-}
-
-func runBridgeGen(args []string) {
-	fmt.Println("Error: bridgegen command has been deprecated.")
-	fmt.Println("The SQL parser has been removed. Please use the 'generate' command with JSON schema instead:")
-	fmt.Println("  generator generate -json=schema/reflector/output/public.json -table=<table_name>")
-	os.Exit(1)
-}
-
 func runGenerateAll(args []string) {
 	fs := flag.NewFlagSet("generate-all", flag.ExitOnError)
+
+	// Auto-detect module path from go.mod
+	defaultModulePath := getModulePath()
 
 	jsonFile := fs.String("json", "", "Path to reflected JSON schema file (required)")
 	tableName := fs.String("table", "", "Table name (required unless using -all)")
 	generateAll := fs.Bool("all", false, "Generate all tables from JSON file")
 	outputDir := fs.String("output", ".", "Base output directory")
-	modulePath := fs.String("module", "github.com/jrazmi/envoker", "Go module path")
+	modulePath := fs.String("module", defaultModulePath, "Go module path (auto-detected from go.mod)")
 	force := fs.Bool("force", false, "Overwrite existing files without prompting")
 	layers := fs.String("layers", "all", "Comma-separated layers to generate: repository,store,bridge,all")
 
@@ -204,10 +144,9 @@ func printUsage() {
 	fmt.Println()
 	fmt.Println("Available Commands:")
 	fmt.Println("  generate       🚀 Generate ALL layers from JSON schema (recommended!)")
-	fmt.Println("  pgxstore       Generate a pgx-based PostgreSQL store (legacy - manual config)")
 	fmt.Println("  help           Show this help message")
 	fmt.Println()
-	fmt.Println("Note: repositorygen, storegen, and bridgegen have been deprecated.")
+	fmt.Println("Note: pgxstore, repositorygen, storegen, and bridgegen have been deprecated.")
 	fmt.Println("Use 'generate' command with JSON schema instead.")
 	fmt.Println()
 	fmt.Println("Examples:")
@@ -225,4 +164,61 @@ func printUsage() {
 	fmt.Println()
 	fmt.Println("For command-specific help:")
 	fmt.Println("  generator <command> -h")
+}
+
+// getModulePath reads the module path from go.mod file
+func getModulePath() string {
+	// Default fallback
+	defaultPath := "github.com/jrazmi/envoker"
+
+	// Try to find go.mod in current directory or parent directories
+	goModPath, err := findGoMod()
+	if err != nil {
+		return defaultPath
+	}
+
+	file, err := os.Open(goModPath)
+	if err != nil {
+		return defaultPath
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if strings.HasPrefix(line, "module ") {
+			// Extract module path (everything after "module ")
+			modulePath := strings.TrimSpace(strings.TrimPrefix(line, "module"))
+			if modulePath != "" {
+				return modulePath
+			}
+		}
+	}
+
+	return defaultPath
+}
+
+// findGoMod searches for go.mod file in current and parent directories
+func findGoMod() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	// Search up to 5 levels up
+	for i := 0; i < 5; i++ {
+		goModPath := filepath.Join(dir, "go.mod")
+		if _, err := os.Stat(goModPath); err == nil {
+			return goModPath, nil
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			// Reached root directory
+			break
+		}
+		dir = parent
+	}
+
+	return "", fmt.Errorf("go.mod not found")
 }
