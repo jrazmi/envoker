@@ -76,11 +76,12 @@ type FKBridgeMethod struct {
 
 // GenerateResult holds the results of bridge generation
 type GenerateResult struct {
-	BridgeFile   string   // Path to generated bridge.go
-	HTTPFile     string   // Path to generated http_gen.go
-	ModelFile    string   // Path to generated model_gen.go
-	MarshalFile  string   // Path to generated marshal_gen.go
-	FOPFile      string   // Path to generated fop_gen.go
-	Errors       []error  // Any errors encountered
-	Warnings     []string // Any warnings
+	BridgeFile      string   // Path to generated bridge.go
+	HTTPRoutesFile  string   // Path to generated http.go (never overwritten)
+	HTTPFile        string   // Path to generated http_gen.go
+	ModelFile       string   // Path to generated model_gen.go
+	MarshalFile     string   // Path to generated marshal_gen.go
+	FOPFile         string   // Path to generated fop_gen.go
+	Errors          []error  // Any errors encountered
+	Warnings        []string // Any warnings
 }

@@ -1,0 +1,2876 @@
+{
+  "version": "1.0",
+  "source": "postgres",
+  "database": "database",
+  "schema_name": "public",
+  "reflected_at": "2025-10-17T18:40:06.174205-07:00",
+  "tables": {
+    "api_keys": {
+      "table_name": "api_keys",
+      "schema": "public",
+      "primary_key": {
+        "column": "api_key_id",
+        "db_type": "uuid",
+        "go_type": "string",
+        "has_default": true,
+        "default_expr": "gen_random_uuid()"
+      },
+      "columns": [
+        {
+          "name": "api_key_id",
+          "db_type": "uuid",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": true,
+          "is_foreign_key": false,
+          "default_value": "gen_random_uuid()",
+          "has_default": true,
+          "validation_tags": "required,uuid"
+        },
+        {
+          "name": "application_id",
+          "db_type": "uuid",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "has_default": false,
+          "validation_tags": "required,uuid"
+        },
+        {
+          "name": "key_prefix",
+          "db_type": "varchar(20)",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 20,
+          "validation_tags": "required,max=20"
+        },
+        {
+          "name": "key_hash",
+          "db_type": "varchar(255)",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 255,
+          "validation_tags": "required,max=255"
+        },
+        {
+          "name": "name",
+          "db_type": "varchar(255)",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 255,
+          "validation_tags": "required,max=255"
+        },
+        {
+          "name": "description",
+          "db_type": "text",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "scopes",
+          "db_type": "jsonb",
+          "go_type": "*json.RawMessage",
+          "go_import": "encoding/json",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "[\"tasks:read\", \"tasks:write\"]",
+          "has_default": true
+        },
+        {
+          "name": "default_webhook_id",
+          "db_type": "uuid",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "has_default": false,
+          "validation_tags": "uuid"
+        },
+        {
+          "name": "rate_limit_requests_per_minute",
+          "db_type": "int4",
+          "go_type": "*int",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "precision": 32
+        },
+        {
+          "name": "rate_limit_requests_per_day",
+          "db_type": "int4",
+          "go_type": "*int",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "precision": 32
+        },
+        {
+          "name": "last_used_at",
+          "db_type": "timestamp",
+          "go_type": "*time.Time",
+          "go_import": "time",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "last_used_ip",
+          "db_type": "inet",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "expires_at",
+          "db_type": "timestamp",
+          "go_type": "*time.Time",
+          "go_import": "time",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "rotated_from_key_id",
+          "db_type": "uuid",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "has_default": false,
+          "validation_tags": "uuid"
+        },
+        {
+          "name": "status",
+          "db_type": "varchar(50)",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "active",
+          "has_default": true,
+          "max_length": 50,
+          "validation_tags": "required,max=50"
+        },
+        {
+          "name": "created_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        },
+        {
+          "name": "updated_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        },
+        {
+          "name": "created_by",
+          "db_type": "uuid",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "has_default": false,
+          "validation_tags": "uuid",
+          "comment": "Reference to the user who created this API key"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column_name": "application_id",
+          "ref_table": "applications",
+          "ref_schema": "public",
+          "ref_column": "application_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "column_name": "default_webhook_id",
+          "ref_table": "webhooks",
+          "ref_schema": "public",
+          "ref_column": "webhook_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "column_name": "rotated_from_key_id",
+          "ref_table": "api_keys",
+          "ref_schema": "public",
+          "ref_column": "api_key_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "column_name": "created_by",
+          "ref_table": "users",
+          "ref_schema": "public",
+          "ref_column": "user_id",
+          "on_delete": "SET_NULL",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "api_keys_key_hash_key",
+          "columns": [
+            "key_hash"
+          ],
+          "unique": true,
+          "method": "btree"
+        },
+        {
+          "name": "idx_api_keys_application",
+          "columns": [
+            "application_id"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_api_keys_created_by",
+          "columns": [
+            "created_by"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_api_keys_hash",
+          "columns": [
+            "key_hash"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_api_keys_prefix",
+          "columns": [
+            "key_prefix"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_api_keys_status",
+          "columns": [
+            "status",
+            "application_id"
+          ],
+          "unique": false,
+          "method": "btree"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "api_keys_key_hash_key",
+          "type": "UNIQUE",
+          "definition": "UNIQUE (key_hash)"
+        }
+      ]
+    },
+    "applications": {
+      "table_name": "applications",
+      "schema": "public",
+      "primary_key": {
+        "column": "application_id",
+        "db_type": "uuid",
+        "go_type": "string",
+        "has_default": true,
+        "default_expr": "gen_random_uuid()"
+      },
+      "columns": [
+        {
+          "name": "application_id",
+          "db_type": "uuid",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": true,
+          "is_foreign_key": false,
+          "default_value": "gen_random_uuid()",
+          "has_default": true,
+          "validation_tags": "required,uuid"
+        },
+        {
+          "name": "name",
+          "db_type": "varchar(255)",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 255,
+          "validation_tags": "required,max=255"
+        },
+        {
+          "name": "slug",
+          "db_type": "varchar(255)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 255,
+          "validation_tags": "max=255"
+        },
+        {
+          "name": "description",
+          "db_type": "text",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "tier",
+          "db_type": "varchar(50)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "standard",
+          "has_default": true,
+          "max_length": 50,
+          "validation_tags": "max=50"
+        },
+        {
+          "name": "rate_limit_requests_per_minute",
+          "db_type": "int4",
+          "go_type": "*int",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "100",
+          "has_default": true,
+          "precision": 32
+        },
+        {
+          "name": "rate_limit_requests_per_day",
+          "db_type": "int4",
+          "go_type": "*int",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "10000",
+          "has_default": true,
+          "precision": 32
+        },
+        {
+          "name": "max_concurrent_tasks",
+          "db_type": "int4",
+          "go_type": "*int",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "10",
+          "has_default": true,
+          "precision": 32
+        },
+        {
+          "name": "default_priority",
+          "db_type": "int4",
+          "go_type": "*int",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "0",
+          "has_default": true,
+          "precision": 32
+        },
+        {
+          "name": "default_max_retries",
+          "db_type": "int4",
+          "go_type": "*int",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "3",
+          "has_default": true,
+          "precision": 32
+        },
+        {
+          "name": "metadata",
+          "db_type": "jsonb",
+          "go_type": "*json.RawMessage",
+          "go_import": "encoding/json",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "{}",
+          "has_default": true
+        },
+        {
+          "name": "status",
+          "db_type": "varchar(50)",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "active",
+          "has_default": true,
+          "max_length": 50,
+          "validation_tags": "required,max=50"
+        },
+        {
+          "name": "created_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        },
+        {
+          "name": "updated_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        }
+      ],
+      "foreign_keys": null,
+      "indexes": [
+        {
+          "name": "applications_slug_key",
+          "columns": [
+            "slug"
+          ],
+          "unique": true,
+          "method": "btree"
+        },
+        {
+          "name": "idx_applications_slug",
+          "columns": [
+            "slug"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_applications_status",
+          "columns": [
+            "status"
+          ],
+          "unique": false,
+          "method": "btree"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "applications_slug_key",
+          "type": "UNIQUE",
+          "definition": "UNIQUE (slug)"
+        }
+      ],
+      "comment": "Main tenant/application table. Each application represents a separate customer/organization."
+    },
+    "audit_logs": {
+      "table_name": "audit_logs",
+      "schema": "public",
+      "primary_key": {
+        "column": "log_id",
+        "db_type": "uuid",
+        "go_type": "string",
+        "has_default": true,
+        "default_expr": "gen_random_uuid()"
+      },
+      "columns": [
+        {
+          "name": "log_id",
+          "db_type": "uuid",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": true,
+          "is_foreign_key": false,
+          "default_value": "gen_random_uuid()",
+          "has_default": true,
+          "validation_tags": "required,uuid"
+        },
+        {
+          "name": "application_id",
+          "db_type": "uuid",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "has_default": false,
+          "validation_tags": "uuid"
+        },
+        {
+          "name": "api_key_id",
+          "db_type": "uuid",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "has_default": false,
+          "validation_tags": "uuid"
+        },
+        {
+          "name": "event_type",
+          "db_type": "varchar(100)",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 100,
+          "validation_tags": "required,max=100"
+        },
+        {
+          "name": "resource_type",
+          "db_type": "varchar(50)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 50,
+          "validation_tags": "max=50"
+        },
+        {
+          "name": "resource_id",
+          "db_type": "uuid",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "validation_tags": "uuid"
+        },
+        {
+          "name": "ip_address",
+          "db_type": "inet",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "user_agent",
+          "db_type": "text",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "event_data",
+          "db_type": "jsonb",
+          "go_type": "*json.RawMessage",
+          "go_import": "encoding/json",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "created_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        },
+        {
+          "name": "updated_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column_name": "application_id",
+          "ref_table": "applications",
+          "ref_schema": "public",
+          "ref_column": "application_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "column_name": "api_key_id",
+          "ref_table": "api_keys",
+          "ref_schema": "public",
+          "ref_column": "api_key_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_audit_logs_api_key",
+          "columns": [
+            "api_key_id",
+            "created_at"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_audit_logs_application",
+          "columns": [
+            "application_id",
+            "created_at"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_audit_logs_event",
+          "columns": [
+            "event_type",
+            "created_at"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_audit_logs_resource",
+          "columns": [
+            "resource_type",
+            "resource_id"
+          ],
+          "unique": false,
+          "method": "btree"
+        }
+      ],
+      "constraints": null
+    },
+    "schema_migrations": {
+      "table_name": "schema_migrations",
+      "schema": "public",
+      "primary_key": {
+        "column": "version",
+        "db_type": "varchar(255)",
+        "go_type": "string",
+        "has_default": false
+      },
+      "columns": [
+        {
+          "name": "version",
+          "db_type": "varchar(255)",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": true,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 255,
+          "validation_tags": "required,max=255"
+        },
+        {
+          "name": "checksum",
+          "db_type": "varchar(64)",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 64,
+          "validation_tags": "required,max=64"
+        },
+        {
+          "name": "applied_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        },
+        {
+          "name": "created_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        },
+        {
+          "name": "updated_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        }
+      ],
+      "foreign_keys": null,
+      "indexes": null,
+      "constraints": null
+    },
+    "task_executions": {
+      "table_name": "task_executions",
+      "schema": "public",
+      "primary_key": {
+        "column": "execution_id",
+        "db_type": "uuid",
+        "go_type": "string",
+        "has_default": true,
+        "default_expr": "gen_random_uuid()"
+      },
+      "columns": [
+        {
+          "name": "execution_id",
+          "db_type": "uuid",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": true,
+          "is_foreign_key": false,
+          "default_value": "gen_random_uuid()",
+          "has_default": true,
+          "validation_tags": "required,uuid"
+        },
+        {
+          "name": "task_id",
+          "db_type": "uuid",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "has_default": false,
+          "validation_tags": "required,uuid"
+        },
+        {
+          "name": "application_id",
+          "db_type": "uuid",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "has_default": false,
+          "validation_tags": "required,uuid"
+        },
+        {
+          "name": "attempt_number",
+          "db_type": "int4",
+          "go_type": "int",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "precision": 32,
+          "validation_tags": "required"
+        },
+        {
+          "name": "worker_id",
+          "db_type": "varchar(100)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 100,
+          "validation_tags": "max=100"
+        },
+        {
+          "name": "status",
+          "db_type": "varchar(50)",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 50,
+          "validation_tags": "required,max=50"
+        },
+        {
+          "name": "started_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        },
+        {
+          "name": "completed_at",
+          "db_type": "timestamp",
+          "go_type": "*time.Time",
+          "go_import": "time",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "duration_ms",
+          "db_type": "int4",
+          "go_type": "*int",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "precision": 32
+        },
+        {
+          "name": "error_message",
+          "db_type": "text",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "error_code",
+          "db_type": "varchar(50)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 50,
+          "validation_tags": "max=50"
+        },
+        {
+          "name": "error_stack_trace",
+          "db_type": "text",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "execution_metadata",
+          "db_type": "jsonb",
+          "go_type": "*json.RawMessage",
+          "go_import": "encoding/json",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "created_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        },
+        {
+          "name": "updated_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column_name": "task_id",
+          "ref_table": "tasks",
+          "ref_schema": "public",
+          "ref_column": "task_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "column_name": "application_id",
+          "ref_table": "applications",
+          "ref_schema": "public",
+          "ref_column": "application_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_executions_application",
+          "columns": [
+            "application_id",
+            "started_at"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_executions_task",
+          "columns": [
+            "task_id",
+            "attempt_number"
+          ],
+          "unique": false,
+          "method": "btree"
+        }
+      ],
+      "constraints": null
+    },
+    "task_results": {
+      "table_name": "task_results",
+      "schema": "public",
+      "primary_key": {
+        "column": "result_id",
+        "db_type": "uuid",
+        "go_type": "string",
+        "has_default": true,
+        "default_expr": "gen_random_uuid()"
+      },
+      "columns": [
+        {
+          "name": "result_id",
+          "db_type": "uuid",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": true,
+          "is_foreign_key": false,
+          "default_value": "gen_random_uuid()",
+          "has_default": true,
+          "validation_tags": "required,uuid"
+        },
+        {
+          "name": "task_id",
+          "db_type": "uuid",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "has_default": false,
+          "validation_tags": "required,uuid"
+        },
+        {
+          "name": "application_id",
+          "db_type": "uuid",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "has_default": false,
+          "validation_tags": "required,uuid"
+        },
+        {
+          "name": "result_data",
+          "db_type": "jsonb",
+          "go_type": "json.RawMessage",
+          "go_import": "encoding/json",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "validation_tags": "required"
+        },
+        {
+          "name": "size_bytes",
+          "db_type": "int4",
+          "go_type": "*int",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "precision": 32
+        },
+        {
+          "name": "created_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        },
+        {
+          "name": "updated_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        },
+        {
+          "name": "webhook_delivered",
+          "db_type": "bool",
+          "go_type": "*bool",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "false",
+          "has_default": true
+        },
+        {
+          "name": "webhook_delivered_at",
+          "db_type": "timestamp",
+          "go_type": "*time.Time",
+          "go_import": "time",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column_name": "task_id",
+          "ref_table": "tasks",
+          "ref_schema": "public",
+          "ref_column": "task_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "column_name": "application_id",
+          "ref_table": "applications",
+          "ref_schema": "public",
+          "ref_column": "application_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_task_results_application",
+          "columns": [
+            "application_id",
+            "created_at"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_task_results_cleanup",
+          "columns": [
+            "created_at",
+            "webhook_delivered"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_task_results_task",
+          "columns": [
+            "task_id"
+          ],
+          "unique": false,
+          "method": "btree"
+        }
+      ],
+      "constraints": null
+    },
+    "tasks": {
+      "table_name": "tasks",
+      "schema": "public",
+      "primary_key": {
+        "column": "task_id",
+        "db_type": "uuid",
+        "go_type": "string",
+        "has_default": true,
+        "default_expr": "gen_random_uuid()"
+      },
+      "columns": [
+        {
+          "name": "task_id",
+          "db_type": "uuid",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": true,
+          "is_foreign_key": false,
+          "default_value": "gen_random_uuid()",
+          "has_default": true,
+          "validation_tags": "required,uuid"
+        },
+        {
+          "name": "application_id",
+          "db_type": "uuid",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "has_default": false,
+          "validation_tags": "required,uuid"
+        },
+        {
+          "name": "task_type",
+          "db_type": "varchar(100)",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 100,
+          "validation_tags": "required,max=100"
+        },
+        {
+          "name": "idempotency_key",
+          "db_type": "varchar(255)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 255,
+          "validation_tags": "max=255"
+        },
+        {
+          "name": "processing_status",
+          "db_type": "varchar(50)",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "pending",
+          "has_default": true,
+          "max_length": 50,
+          "validation_tags": "required,max=50"
+        },
+        {
+          "name": "input_metadata",
+          "db_type": "jsonb",
+          "go_type": "*json.RawMessage",
+          "go_import": "encoding/json",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "client_metadata",
+          "db_type": "jsonb",
+          "go_type": "*json.RawMessage",
+          "go_import": "encoding/json",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "result_id",
+          "db_type": "uuid",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "has_default": false,
+          "validation_tags": "uuid"
+        },
+        {
+          "name": "priority",
+          "db_type": "int4",
+          "go_type": "*int",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "0",
+          "has_default": true,
+          "precision": 32
+        },
+        {
+          "name": "scheduled_for",
+          "db_type": "timestamp",
+          "go_type": "*time.Time",
+          "go_import": "time",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true
+        },
+        {
+          "name": "max_retries",
+          "db_type": "int4",
+          "go_type": "*int",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "3",
+          "has_default": true,
+          "precision": 32
+        },
+        {
+          "name": "retry_count",
+          "db_type": "int4",
+          "go_type": "*int",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "0",
+          "has_default": true,
+          "precision": 32
+        },
+        {
+          "name": "retry_strategy",
+          "db_type": "varchar(50)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "exponential",
+          "has_default": true,
+          "max_length": 50,
+          "validation_tags": "max=50"
+        },
+        {
+          "name": "error_message",
+          "db_type": "text",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "error_code",
+          "db_type": "varchar(50)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 50,
+          "validation_tags": "max=50"
+        },
+        {
+          "name": "last_error_at",
+          "db_type": "timestamp",
+          "go_type": "*time.Time",
+          "go_import": "time",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "callback_attempted_at",
+          "db_type": "timestamp",
+          "go_type": "*time.Time",
+          "go_import": "time",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "callback_succeeded_at",
+          "db_type": "timestamp",
+          "go_type": "*time.Time",
+          "go_import": "time",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "callback_error_message",
+          "db_type": "text",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "processing_time_ms",
+          "db_type": "int4",
+          "go_type": "*int",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "precision": 32
+        },
+        {
+          "name": "started_at",
+          "db_type": "timestamp",
+          "go_type": "*time.Time",
+          "go_import": "time",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "completed_at",
+          "db_type": "timestamp",
+          "go_type": "*time.Time",
+          "go_import": "time",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "worker_id",
+          "db_type": "varchar(100)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 100,
+          "validation_tags": "max=100"
+        },
+        {
+          "name": "locked_until",
+          "db_type": "timestamp",
+          "go_type": "*time.Time",
+          "go_import": "time",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "created_by_api_key_id",
+          "db_type": "uuid",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "has_default": false,
+          "validation_tags": "uuid"
+        },
+        {
+          "name": "created_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        },
+        {
+          "name": "updated_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        },
+        {
+          "name": "last_run_at",
+          "db_type": "timestamp",
+          "go_type": "*time.Time",
+          "go_import": "time",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column_name": "application_id",
+          "ref_table": "applications",
+          "ref_schema": "public",
+          "ref_column": "application_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "column_name": "created_by_api_key_id",
+          "ref_table": "api_keys",
+          "ref_schema": "public",
+          "ref_column": "api_key_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "column_name": "result_id",
+          "ref_table": "task_results",
+          "ref_schema": "public",
+          "ref_column": "result_id",
+          "on_delete": "SET_NULL",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_tasks_application",
+          "columns": [
+            "application_id"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_tasks_callback_failed",
+          "columns": [
+            "application_id",
+            "processing_status",
+            "callback_attempted_at"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_tasks_idempotency",
+          "columns": [
+            "application_id",
+            "idempotency_key"
+          ],
+          "unique": true,
+          "method": "btree"
+        },
+        {
+          "name": "idx_tasks_performance",
+          "columns": [
+            "application_id",
+            "task_type",
+            "completed_at"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_tasks_queue_poll",
+          "columns": [
+            "application_id",
+            "processing_status",
+            "priority",
+            "scheduled_for",
+            "created_at"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_tasks_status",
+          "columns": [
+            "processing_status"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_tasks_type",
+          "columns": [
+            "application_id",
+            "task_type"
+          ],
+          "unique": false,
+          "method": "btree"
+        }
+      ],
+      "constraints": null
+    },
+    "user_sessions": {
+      "table_name": "user_sessions",
+      "schema": "public",
+      "primary_key": {
+        "column": "session_id",
+        "db_type": "uuid",
+        "go_type": "string",
+        "has_default": true,
+        "default_expr": "gen_random_uuid()"
+      },
+      "columns": [
+        {
+          "name": "session_id",
+          "db_type": "uuid",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": true,
+          "is_foreign_key": false,
+          "default_value": "gen_random_uuid()",
+          "has_default": true,
+          "validation_tags": "required,uuid"
+        },
+        {
+          "name": "user_id",
+          "db_type": "uuid",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "has_default": false,
+          "validation_tags": "required,uuid"
+        },
+        {
+          "name": "session_token",
+          "db_type": "varchar(255)",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 255,
+          "validation_tags": "required,max=255"
+        },
+        {
+          "name": "refresh_token",
+          "db_type": "varchar(255)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 255,
+          "validation_tags": "max=255"
+        },
+        {
+          "name": "ip_address",
+          "db_type": "inet",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "user_agent",
+          "db_type": "text",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "device_info",
+          "db_type": "jsonb",
+          "go_type": "*json.RawMessage",
+          "go_import": "encoding/json",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "expires_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "validation_tags": "required"
+        },
+        {
+          "name": "refresh_expires_at",
+          "db_type": "timestamp",
+          "go_type": "*time.Time",
+          "go_import": "time",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "status",
+          "db_type": "varchar(50)",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "active",
+          "has_default": true,
+          "max_length": 50,
+          "validation_tags": "required,max=50"
+        },
+        {
+          "name": "created_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        },
+        {
+          "name": "updated_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        },
+        {
+          "name": "last_active_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column_name": "user_id",
+          "ref_table": "users",
+          "ref_schema": "public",
+          "ref_column": "user_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_sessions_created",
+          "columns": [
+            "created_at"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_sessions_expiry",
+          "columns": [
+            "expires_at"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_sessions_token",
+          "columns": [
+            "session_token"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_sessions_user",
+          "columns": [
+            "user_id",
+            "status"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "user_sessions_session_token_key",
+          "columns": [
+            "session_token"
+          ],
+          "unique": true,
+          "method": "btree"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "user_sessions_session_token_key",
+          "type": "UNIQUE",
+          "definition": "UNIQUE (session_token)"
+        }
+      ],
+      "comment": "Active user sessions for authentication and authorization."
+    },
+    "users": {
+      "table_name": "users",
+      "schema": "public",
+      "primary_key": {
+        "column": "user_id",
+        "db_type": "uuid",
+        "go_type": "string",
+        "has_default": true,
+        "default_expr": "gen_random_uuid()"
+      },
+      "columns": [
+        {
+          "name": "user_id",
+          "db_type": "uuid",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": true,
+          "is_foreign_key": false,
+          "default_value": "gen_random_uuid()",
+          "has_default": true,
+          "validation_tags": "required,uuid"
+        },
+        {
+          "name": "email",
+          "db_type": "varchar(255)",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 255,
+          "validation_tags": "required,max=255,email"
+        },
+        {
+          "name": "username",
+          "db_type": "varchar(100)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 100,
+          "validation_tags": "max=100"
+        },
+        {
+          "name": "password_hash",
+          "db_type": "varchar(255)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 255,
+          "validation_tags": "max=255"
+        },
+        {
+          "name": "password_salt",
+          "db_type": "varchar(255)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 255,
+          "validation_tags": "max=255"
+        },
+        {
+          "name": "first_name",
+          "db_type": "varchar(100)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 100,
+          "validation_tags": "max=100"
+        },
+        {
+          "name": "last_name",
+          "db_type": "varchar(100)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 100,
+          "validation_tags": "max=100"
+        },
+        {
+          "name": "display_name",
+          "db_type": "varchar(255)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 255,
+          "validation_tags": "max=255"
+        },
+        {
+          "name": "email_verified",
+          "db_type": "bool",
+          "go_type": "*bool",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "false",
+          "has_default": true,
+          "validation_tags": "email"
+        },
+        {
+          "name": "email_verified_at",
+          "db_type": "timestamp",
+          "go_type": "*time.Time",
+          "go_import": "time",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "validation_tags": "email"
+        },
+        {
+          "name": "role",
+          "db_type": "varchar(50)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "user",
+          "has_default": true,
+          "max_length": 50,
+          "validation_tags": "max=50"
+        },
+        {
+          "name": "permissions",
+          "db_type": "jsonb",
+          "go_type": "*json.RawMessage",
+          "go_import": "encoding/json",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "[]",
+          "has_default": true
+        },
+        {
+          "name": "last_login_at",
+          "db_type": "timestamp",
+          "go_type": "*time.Time",
+          "go_import": "time",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "last_login_ip",
+          "db_type": "inet",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "failed_login_attempts",
+          "db_type": "int4",
+          "go_type": "*int",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "0",
+          "has_default": true,
+          "precision": 32
+        },
+        {
+          "name": "locked_until",
+          "db_type": "timestamp",
+          "go_type": "*time.Time",
+          "go_import": "time",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "password_reset_token",
+          "db_type": "varchar(255)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 255,
+          "validation_tags": "max=255"
+        },
+        {
+          "name": "password_reset_expires_at",
+          "db_type": "timestamp",
+          "go_type": "*time.Time",
+          "go_import": "time",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "metadata",
+          "db_type": "jsonb",
+          "go_type": "*json.RawMessage",
+          "go_import": "encoding/json",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "{}",
+          "has_default": true
+        },
+        {
+          "name": "status",
+          "db_type": "varchar(50)",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "active",
+          "has_default": true,
+          "max_length": 50,
+          "validation_tags": "required,max=50"
+        },
+        {
+          "name": "created_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        },
+        {
+          "name": "updated_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        }
+      ],
+      "foreign_keys": null,
+      "indexes": [
+        {
+          "name": "idx_users_created",
+          "columns": [
+            "created_at"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_users_email",
+          "columns": [
+            "email"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_users_role",
+          "columns": [
+            "role"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_users_status",
+          "columns": [
+            "status"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_users_username",
+          "columns": [
+            "username"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "users_email_key",
+          "columns": [
+            "email"
+          ],
+          "unique": true,
+          "method": "btree"
+        },
+        {
+          "name": "users_username_key",
+          "columns": [
+            "username"
+          ],
+          "unique": true,
+          "method": "btree"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "users_email_key",
+          "type": "UNIQUE",
+          "definition": "UNIQUE (email)"
+        },
+        {
+          "name": "users_username_key",
+          "type": "UNIQUE",
+          "definition": "UNIQUE (username)"
+        }
+      ],
+      "comment": "User accounts for accessing and managing the system."
+    },
+    "webhook_deliveries": {
+      "table_name": "webhook_deliveries",
+      "schema": "public",
+      "primary_key": {
+        "column": "delivery_id",
+        "db_type": "uuid",
+        "go_type": "string",
+        "has_default": true,
+        "default_expr": "gen_random_uuid()"
+      },
+      "columns": [
+        {
+          "name": "delivery_id",
+          "db_type": "uuid",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": true,
+          "is_foreign_key": false,
+          "default_value": "gen_random_uuid()",
+          "has_default": true,
+          "validation_tags": "required,uuid"
+        },
+        {
+          "name": "webhook_id",
+          "db_type": "uuid",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "has_default": false,
+          "validation_tags": "required,uuid"
+        },
+        {
+          "name": "task_id",
+          "db_type": "uuid",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "has_default": false,
+          "validation_tags": "required,uuid"
+        },
+        {
+          "name": "application_id",
+          "db_type": "uuid",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "has_default": false,
+          "validation_tags": "required,uuid"
+        },
+        {
+          "name": "attempt_number",
+          "db_type": "int4",
+          "go_type": "int",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "1",
+          "has_default": true,
+          "precision": 32,
+          "validation_tags": "required"
+        },
+        {
+          "name": "request_url",
+          "db_type": "text",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "validation_tags": "required"
+        },
+        {
+          "name": "request_method",
+          "db_type": "varchar(10)",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 10,
+          "validation_tags": "required,max=10"
+        },
+        {
+          "name": "request_headers",
+          "db_type": "jsonb",
+          "go_type": "*json.RawMessage",
+          "go_import": "encoding/json",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "request_body",
+          "db_type": "jsonb",
+          "go_type": "*json.RawMessage",
+          "go_import": "encoding/json",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "response_status_code",
+          "db_type": "int2",
+          "go_type": "*int16",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "precision": 16
+        },
+        {
+          "name": "response_headers",
+          "db_type": "jsonb",
+          "go_type": "*json.RawMessage",
+          "go_import": "encoding/json",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "response_body",
+          "db_type": "text",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "response_time_ms",
+          "db_type": "int4",
+          "go_type": "*int",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "precision": 32
+        },
+        {
+          "name": "delivery_status",
+          "db_type": "varchar(50)",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 50,
+          "validation_tags": "required,max=50"
+        },
+        {
+          "name": "error_message",
+          "db_type": "text",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "next_retry_at",
+          "db_type": "timestamp",
+          "go_type": "*time.Time",
+          "go_import": "time",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "attempted_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        },
+        {
+          "name": "completed_at",
+          "db_type": "timestamp",
+          "go_type": "*time.Time",
+          "go_import": "time",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "created_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        },
+        {
+          "name": "updated_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column_name": "webhook_id",
+          "ref_table": "webhooks",
+          "ref_schema": "public",
+          "ref_column": "webhook_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "column_name": "task_id",
+          "ref_table": "tasks",
+          "ref_schema": "public",
+          "ref_column": "task_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "column_name": "application_id",
+          "ref_table": "applications",
+          "ref_schema": "public",
+          "ref_column": "application_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_webhook_deliveries_retry",
+          "columns": [
+            "delivery_status",
+            "next_retry_at"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_webhook_deliveries_task",
+          "columns": [
+            "task_id",
+            "attempt_number"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_webhook_deliveries_webhook",
+          "columns": [
+            "webhook_id",
+            "attempted_at"
+          ],
+          "unique": false,
+          "method": "btree"
+        }
+      ],
+      "constraints": null
+    },
+    "webhooks": {
+      "table_name": "webhooks",
+      "schema": "public",
+      "primary_key": {
+        "column": "webhook_id",
+        "db_type": "uuid",
+        "go_type": "string",
+        "has_default": true,
+        "default_expr": "gen_random_uuid()"
+      },
+      "columns": [
+        {
+          "name": "webhook_id",
+          "db_type": "uuid",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": true,
+          "is_foreign_key": false,
+          "default_value": "gen_random_uuid()",
+          "has_default": true,
+          "validation_tags": "required,uuid"
+        },
+        {
+          "name": "application_id",
+          "db_type": "uuid",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "has_default": false,
+          "validation_tags": "required,uuid"
+        },
+        {
+          "name": "name",
+          "db_type": "varchar(255)",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 255,
+          "validation_tags": "required,max=255"
+        },
+        {
+          "name": "description",
+          "db_type": "text",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "url",
+          "db_type": "text",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "validation_tags": "required"
+        },
+        {
+          "name": "method",
+          "db_type": "varchar(10)",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "POST",
+          "has_default": true,
+          "max_length": 10,
+          "validation_tags": "required,max=10"
+        },
+        {
+          "name": "headers",
+          "db_type": "jsonb",
+          "go_type": "*json.RawMessage",
+          "go_import": "encoding/json",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "{}",
+          "has_default": true
+        },
+        {
+          "name": "auth_type",
+          "db_type": "varchar(50)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 50,
+          "validation_tags": "max=50"
+        },
+        {
+          "name": "auth_username",
+          "db_type": "varchar(255)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 255,
+          "validation_tags": "max=255"
+        },
+        {
+          "name": "auth_password_encrypted",
+          "db_type": "text",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false
+        },
+        {
+          "name": "max_retries",
+          "db_type": "int4",
+          "go_type": "*int",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "10",
+          "has_default": true,
+          "precision": 32
+        },
+        {
+          "name": "retry_strategy",
+          "db_type": "varchar(50)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "exponential",
+          "has_default": true,
+          "max_length": 50,
+          "validation_tags": "max=50"
+        },
+        {
+          "name": "retry_window_hours",
+          "db_type": "int4",
+          "go_type": "*int",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "24",
+          "has_default": true,
+          "precision": 32
+        },
+        {
+          "name": "status",
+          "db_type": "varchar(50)",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "active",
+          "has_default": true,
+          "max_length": 50,
+          "validation_tags": "required,max=50"
+        },
+        {
+          "name": "created_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        },
+        {
+          "name": "updated_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column_name": "application_id",
+          "ref_table": "applications",
+          "ref_schema": "public",
+          "ref_column": "application_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_webhooks_application",
+          "columns": [
+            "application_id"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_webhooks_status",
+          "columns": [
+            "status",
+            "application_id"
+          ],
+          "unique": false,
+          "method": "btree"
+        }
+      ],
+      "constraints": null,
+      "comment": "Webhook configurations for task completion callbacks."
+    },
+    "worker_heartbeats": {
+      "table_name": "worker_heartbeats",
+      "schema": "public",
+      "primary_key": {
+        "column": "worker_id",
+        "db_type": "varchar(100)",
+        "go_type": "string",
+        "has_default": false
+      },
+      "columns": [
+        {
+          "name": "worker_id",
+          "db_type": "varchar(100)",
+          "go_type": "string",
+          "go_import": "",
+          "is_nullable": false,
+          "is_primary_key": true,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 100,
+          "validation_tags": "required,max=100"
+        },
+        {
+          "name": "application_id",
+          "db_type": "uuid",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "has_default": false,
+          "validation_tags": "uuid"
+        },
+        {
+          "name": "hostname",
+          "db_type": "varchar(255)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "max_length": 255,
+          "validation_tags": "max=255"
+        },
+        {
+          "name": "process_id",
+          "db_type": "int4",
+          "go_type": "*int",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "has_default": false,
+          "precision": 32
+        },
+        {
+          "name": "status",
+          "db_type": "varchar(50)",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "active",
+          "has_default": true,
+          "max_length": 50,
+          "validation_tags": "max=50"
+        },
+        {
+          "name": "current_task_id",
+          "db_type": "uuid",
+          "go_type": "*string",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "has_default": false,
+          "validation_tags": "uuid"
+        },
+        {
+          "name": "max_concurrent_tasks",
+          "db_type": "int4",
+          "go_type": "*int",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "1",
+          "has_default": true,
+          "precision": 32
+        },
+        {
+          "name": "current_task_count",
+          "db_type": "int4",
+          "go_type": "*int",
+          "go_import": "",
+          "is_nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "0",
+          "has_default": true,
+          "precision": 32
+        },
+        {
+          "name": "started_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        },
+        {
+          "name": "last_heartbeat_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        },
+        {
+          "name": "created_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        },
+        {
+          "name": "updated_at",
+          "db_type": "timestamp",
+          "go_type": "time.Time",
+          "go_import": "time",
+          "is_nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "default_value": "now()",
+          "has_default": true,
+          "validation_tags": "required"
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column_name": "application_id",
+          "ref_table": "applications",
+          "ref_schema": "public",
+          "ref_column": "application_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "column_name": "current_task_id",
+          "ref_table": "tasks",
+          "ref_schema": "public",
+          "ref_column": "task_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_worker_application",
+          "columns": [
+            "application_id",
+            "status"
+          ],
+          "unique": false,
+          "method": "btree"
+        },
+        {
+          "name": "idx_worker_heartbeat",
+          "columns": [
+            "last_heartbeat_at"
+          ],
+          "unique": false,
+          "method": "btree"
+        }
+      ],
+      "constraints": null
+    }
+  }
+}

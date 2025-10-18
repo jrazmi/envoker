@@ -31,21 +31,13 @@ type Result struct {
 	Warnings         []string
 }
 
-// GenerateAll orchestrates the generation of all layers from a SQL file
-func GenerateAll(sqlContent string, config Config) (*Result, error) {
+// GenerateAll orchestrates the generation of all layers from a ParseResult
+func GenerateAll(parseResult *sqlparser.ParseResult, config Config) (*Result, error) {
 	result := &Result{
 		StartTime: time.Now(),
 	}
 
-	// Parse SQL
-	fmt.Println("🔍 Parsing SQL schema...")
-	parseResult, err := sqlparser.Parse(sqlContent)
-	if err != nil {
-		result.Errors = append(result.Errors, fmt.Errorf("parse SQL: %w", err))
-		return result, err
-	}
-
-	// Analyze and enrich
+	// Analyze and enrich (if not already done)
 	fmt.Println("🧠 Analyzing schema and deriving metadata...")
 	if err := sqlparser.Analyze(parseResult); err != nil {
 		result.Errors = append(result.Errors, fmt.Errorf("analyze SQL: %w", err))
@@ -129,6 +121,7 @@ func GenerateAll(sqlContent string, config Config) (*Result, error) {
 
 		result.BridgeResult = bridgeResult
 		fmt.Printf("  ✅ Bridge:  %s\n", bridgeResult.BridgeFile)
+		fmt.Printf("  ✅ Routes:  %s\n", bridgeResult.HTTPRoutesFile)
 		fmt.Printf("  ✅ HTTP:    %s\n", bridgeResult.HTTPFile)
 		fmt.Printf("  ✅ Model:   %s\n", bridgeResult.ModelFile)
 		fmt.Printf("  ✅ Marshal: %s\n", bridgeResult.MarshalFile)
@@ -171,6 +164,7 @@ func PrintSummary(result *Result, tableName string) {
 	if result.BridgeResult != nil {
 		fmt.Println("\n🌉 Bridge Layer:")
 		fmt.Printf("   • %s\n", result.BridgeResult.BridgeFile)
+		fmt.Printf("   • %s\n", result.BridgeResult.HTTPRoutesFile)
 		fmt.Printf("   • %s\n", result.BridgeResult.HTTPFile)
 		fmt.Printf("   • %s\n", result.BridgeResult.ModelFile)
 		fmt.Printf("   • %s\n", result.BridgeResult.MarshalFile)

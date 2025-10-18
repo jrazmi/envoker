@@ -120,11 +120,15 @@ func prepareTemplateData(parseResult *sqlparser.ParseResult, config Config) (*Te
 		}
 	}
 
-	// Check if CreatedAt is a pointer
+	// Check if CreatedAt exists and if it's a pointer
+	data.HasCreatedAt = false
 	data.CreatedAtIsPointer = false
 	for _, col := range schema.Columns {
-		if col.Name == "created_at" && strings.HasPrefix(col.GoType, "*") {
-			data.CreatedAtIsPointer = true
+		if col.Name == "created_at" {
+			data.HasCreatedAt = true
+			if strings.HasPrefix(col.GoType, "*") {
+				data.CreatedAtIsPointer = true
+			}
 			break
 		}
 	}

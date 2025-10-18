@@ -99,13 +99,51 @@ func parseFilter(qp queryParams) ({{.RepoPackage}}.{{.EntityName}}Filter, error)
 			return filter, fmt.Errorf("invalid {{.DBColumn}} format: %s", qp.{{.BridgeName}})
 		}
 	}
-{{- else if or (Contains .GoType "int") (Contains .GoType "int32") (Contains .GoType "int64")}}
-	// {{.BridgeName}} - integer filter
+{{- else if Contains .GoType "int64"}}
+	// {{.BridgeName}} - int64 filter
+	if qp.{{.BridgeName}} != "" {
+		if val, err := strconv.ParseInt(qp.{{.BridgeName}}, 10, 64); err == nil {
+			filter.{{.BridgeName}} = &val
+		} else {
+			return filter, fmt.Errorf("invalid {{.DBColumn}}: %s", qp.{{.BridgeName}})
+		}
+	}
+{{- else if Contains .GoType "int32"}}
+	// {{.BridgeName}} - int32 filter
+	if qp.{{.BridgeName}} != "" {
+		if val, err := strconv.ParseInt(qp.{{.BridgeName}}, 10, 32); err == nil {
+			val32 := int32(val)
+			filter.{{.BridgeName}} = &val32
+		} else {
+			return filter, fmt.Errorf("invalid {{.DBColumn}}: %s", qp.{{.BridgeName}})
+		}
+	}
+{{- else if Contains .GoType "int16"}}
+	// {{.BridgeName}} - int16 filter
+	if qp.{{.BridgeName}} != "" {
+		if val, err := strconv.ParseInt(qp.{{.BridgeName}}, 10, 16); err == nil {
+			val16 := int16(val)
+			filter.{{.BridgeName}} = &val16
+		} else {
+			return filter, fmt.Errorf("invalid {{.DBColumn}}: %s", qp.{{.BridgeName}})
+		}
+	}
+{{- else if Contains .GoType "int"}}
+	// {{.BridgeName}} - int filter
 	if qp.{{.BridgeName}} != "" {
 		if val, err := strconv.Atoi(qp.{{.BridgeName}}); err == nil {
 			filter.{{.BridgeName}} = &val
 		} else {
 			return filter, fmt.Errorf("invalid {{.DBColumn}}: %s", qp.{{.BridgeName}})
+		}
+	}
+{{- else if Contains .GoType "bool"}}
+	// {{.BridgeName}} - boolean filter
+	if qp.{{.BridgeName}} != "" {
+		if val, err := strconv.ParseBool(qp.{{.BridgeName}}); err == nil {
+			filter.{{.BridgeName}} = &val
+		} else {
+			return filter, fmt.Errorf("invalid {{.DBColumn}}: %s (expected true/false)", qp.{{.BridgeName}})
 		}
 	}
 {{- else}}

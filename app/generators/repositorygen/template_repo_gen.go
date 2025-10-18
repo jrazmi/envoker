@@ -97,6 +97,7 @@ func (r *Repository) List(ctx context.Context, filter {{.EntityName}}Filter, ord
 	// If we have more records than the limit, trim the list and set next cursor
 	if len(records) > page.Limit {
 		returnableRecords = records[:page.Limit]
+{{- if .HasCreatedAt}}
 		lastRecord := returnableRecords[len(returnableRecords)-1]
 {{- if .CreatedAtIsPointer}}
 		if lastRecord.CreatedAt == nil {
@@ -109,6 +110,10 @@ func (r *Repository) List(ctx context.Context, filter {{.EntityName}}Filter, ord
 		if err != nil {
 			return nil, fop.Pagination{}, fmt.Errorf("encode next cursor: %w", err)
 		}
+{{- else}}
+		// Note: Table does not have created_at field, cursor-based pagination unavailable
+		nextCursor = ""
+{{- end}}
 	}
 
 	pagination := fop.Pagination{
@@ -176,6 +181,7 @@ func (r *Repository) {{.MethodName}}(ctx context.Context, {{.FKParamName}} {{.FK
 	// If we have more records than the limit, trim the list and set next cursor
 	if len(records) > page.Limit {
 		returnableRecords = records[:page.Limit]
+{{- if $.HasCreatedAt}}
 		lastRecord := returnableRecords[len(returnableRecords)-1]
 {{- if $.CreatedAtIsPointer}}
 		if lastRecord.CreatedAt == nil {
@@ -188,6 +194,10 @@ func (r *Repository) {{.MethodName}}(ctx context.Context, {{.FKParamName}} {{.FK
 		if err != nil {
 			return nil, fop.Pagination{}, fmt.Errorf("encode next cursor: %w", err)
 		}
+{{- else}}
+		// Note: Table does not have created_at field, cursor-based pagination unavailable
+		nextCursor = ""
+{{- end}}
 	}
 
 	pagination := fop.Pagination{

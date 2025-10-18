@@ -35,6 +35,7 @@ type TemplateData struct {
 	PKInCreate  bool   // True if PK is in CreateStruct
 
 	// Timestamp fields metadata
+	HasCreatedAt       bool // True if table has created_at column
 	CreatedAtIsPointer bool // True if CreatedAt is *time.Time
 
 	// Columns and fields

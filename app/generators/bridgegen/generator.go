@@ -25,7 +25,8 @@ func Generate(parseResult *sqlparser.ParseResult, config Config) (*GenerateResul
 	// Determine output paths
 	bridgeDir := filepath.Join(config.OutputDir, parseResult.Naming.BridgePath)
 	bridgeInitFile := filepath.Join(bridgeDir, "bridge.go")
-	httpFile := filepath.Join(bridgeDir, "http_gen.go")
+	httpRoutesFile := filepath.Join(bridgeDir, "http.go") // User-editable route registration (never overwrite)
+	httpFile := filepath.Join(bridgeDir, "http_gen.go")   // Generated HTTP handlers
 	modelFile := filepath.Join(bridgeDir, "model_gen.go")
 	marshalFile := filepath.Join(bridgeDir, "marshal_gen.go")
 	fopFile := filepath.Join(bridgeDir, "fop_gen.go")
@@ -58,6 +59,19 @@ func Generate(parseResult *sqlparser.ParseResult, config Config) (*GenerateResul
 		result.BridgeFile = bridgeInitFile
 	}
 
+	// Generate http.go ONLY if it doesn't exist (never overwrite, even with -force)
+	if !fileExists(httpRoutesFile) {
+		if err := generateFile(httpRoutesFile, HTTPRoutesTemplate, templateData); err != nil {
+			result.Errors = append(result.Errors, err)
+			return result, fmt.Errorf("generate http routes file: %w", err)
+		}
+		result.HTTPRoutesFile = httpRoutesFile
+	} else {
+		result.Warnings = append(result.Warnings, fmt.Sprintf("Skipped: %s (already exists, will not overwrite)", httpRoutesFile))
+		result.HTTPRoutesFile = httpRoutesFile
+	}
+
+	// Generate http_gen.go (can be overwritten with -force)
 	if err := generateFile(httpFile, HTTPTemplate, templateData); err != nil {
 		result.Errors = append(result.Errors, err)
 		return result, fmt.Errorf("generate http file: %w", err)
