@@ -6,6 +6,9 @@ package {{.PackageName}}
 
 import (
 	"encoding/json"
+{{- if .NeedsTimeImport}}
+	"time"
+{{- end}}
 )
 
 // {{.EntityName}} represents the bridge model for {{.EntityNameLower}}

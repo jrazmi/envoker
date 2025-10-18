@@ -8,11 +8,11 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/jrazmi/envoker/app/generators/sqlparser"
+	"github.com/jrazmi/envoker/app/generators/schema"
 )
 
 // Generate creates repository files from a parsed SQL schema
-func Generate(parseResult *sqlparser.ParseResult, config Config) (*GenerateResult, error) {
+func Generate(parseResult *schema.ParseResult, config Config) (*GenerateResult, error) {
 	result := &GenerateResult{}
 
 	// Prepare template data
@@ -83,7 +83,7 @@ func Generate(parseResult *sqlparser.ParseResult, config Config) (*GenerateResul
 }
 
 // prepareTemplateData converts parsed schema to template data
-func prepareTemplateData(parseResult *sqlparser.ParseResult, config Config) (*TemplateData, error) {
+func prepareTemplateData(parseResult *schema.ParseResult, config Config) (*TemplateData, error) {
 	schema := parseResult.Schema
 	naming := parseResult.Naming
 
@@ -101,8 +101,8 @@ func prepareTemplateData(parseResult *sqlparser.ParseResult, config Config) (*Te
 		PKParamName:         naming.PKParamName,
 		StorerInterfaceName: "Storer",
 		Columns:             schema.Columns,
-		HasStatusColumn:     sqlparser.HasStatusColumn(schema),
-		HasDeletedAt:        sqlparser.HasDeletedAtColumn(schema),
+		HasStatusColumn:     schema.HasStatusColumn(schema),
+		HasDeletedAt:        schema.HasDeletedAtColumn(schema),
 	}
 
 	// Build field lists
@@ -144,11 +144,11 @@ func prepareTemplateData(parseResult *sqlparser.ParseResult, config Config) (*Te
 }
 
 // buildEntityFields creates fields for the main entity struct
-func buildEntityFields(columns []sqlparser.Column) []FieldInfo {
+func buildEntityFields(columns []schema.Column) []FieldInfo {
 	var fields []FieldInfo
 	for _, col := range columns {
 		field := FieldInfo{
-			Name:         sqlparser.ToPascalCase(col.Name),
+			Name:         schema.ToPascalCase(col.Name),
 			GoType:       col.GoType,
 			DBColumn:     col.Name,
 			JSONTag:      col.Name,
@@ -168,7 +168,7 @@ func buildEntityFields(columns []sqlparser.Column) []FieldInfo {
 }
 
 // buildCreateFields creates fields for the Create struct (excludes auto-generated PKs and timestamps)
-func buildCreateFields(columns []sqlparser.Column, pk sqlparser.PrimaryKeyInfo) []FieldInfo {
+func buildCreateFields(columns []schema.Column, pk schema.PrimaryKeyInfo) []FieldInfo {
 	var fields []FieldInfo
 	for _, col := range columns {
 		// Skip auto-generated PK
@@ -184,7 +184,7 @@ func buildCreateFields(columns []sqlparser.Column, pk sqlparser.PrimaryKeyInfo) 
 		}
 
 		field := FieldInfo{
-			Name:         sqlparser.ToPascalCase(col.Name),
+			Name:         schema.ToPascalCase(col.Name),
 			GoType:       col.GoType,
 			DBColumn:     col.Name,
 			JSONTag:      col.Name,
@@ -203,7 +203,7 @@ func buildCreateFields(columns []sqlparser.Column, pk sqlparser.PrimaryKeyInfo) 
 }
 
 // buildUpdateFields creates fields for the Update struct (all fields optional/pointer)
-func buildUpdateFields(columns []sqlparser.Column, pk sqlparser.PrimaryKeyInfo) []FieldInfo {
+func buildUpdateFields(columns []schema.Column, pk schema.PrimaryKeyInfo) []FieldInfo {
 	var fields []FieldInfo
 	for _, col := range columns {
 		// Skip PK and auto-timestamps
@@ -221,7 +221,7 @@ func buildUpdateFields(columns []sqlparser.Column, pk sqlparser.PrimaryKeyInfo) 
 		}
 
 		field := FieldInfo{
-			Name:         sqlparser.ToPascalCase(col.Name),
+			Name:         schema.ToPascalCase(col.Name),
 			GoType:       goType,
 			DBColumn:     col.Name,
 			JSONTag:      col.Name,
@@ -239,7 +239,7 @@ func buildUpdateFields(columns []sqlparser.Column, pk sqlparser.PrimaryKeyInfo) 
 }
 
 // buildFilterFields creates fields for the Filter struct (all optional)
-func buildFilterFields(columns []sqlparser.Column, pk sqlparser.PrimaryKeyInfo) []FieldInfo {
+func buildFilterFields(columns []schema.Column, pk schema.PrimaryKeyInfo) []FieldInfo {
 	var fields []FieldInfo
 	for _, col := range columns {
 		// Skip audit timestamps
@@ -254,7 +254,7 @@ func buildFilterFields(columns []sqlparser.Column, pk sqlparser.PrimaryKeyInfo) 
 		}
 
 		field := FieldInfo{
-			Name:     sqlparser.ToPascalCase(col.Name),
+			Name:     schema.ToPascalCase(col.Name),
 			GoType:   goType,
 			DBColumn: col.Name,
 			JSONTag:  col.Name,
@@ -266,15 +266,15 @@ func buildFilterFields(columns []sqlparser.Column, pk sqlparser.PrimaryKeyInfo) 
 }
 
 // buildFKMethods creates FK method info from foreign keys
-func buildFKMethods(foreignKeys []sqlparser.ForeignKey, entityNamePlural string) []FKMethodInfo {
+func buildFKMethods(foreignKeys []schema.ForeignKey, entityNamePlural string) []FKMethodInfo {
 	var methods []FKMethodInfo
 	for _, fk := range foreignKeys {
 		method := FKMethodInfo{
 			MethodName:     "List" + fk.MethodSuffix,
 			FKColumn:       fk.ColumnName,
 			FKGoType:       strings.TrimPrefix(fk.RefColumn, "*"), // Assume string for now
-			FKParamName:    sqlparser.ToCamelCase(fk.ColumnName),
-			FKGoName:       sqlparser.ToPascalCase(fk.ColumnName),
+			FKParamName:    schema.ToCamelCase(fk.ColumnName),
+			FKGoName:       schema.ToPascalCase(fk.ColumnName),
 			RefEntityName:  fk.EntityName,
 			RefRepoPackage: fk.RepoPackageName,
 			Comment:        fmt.Sprintf("Retrieves %s for a given %s", entityNamePlural, fk.EntityName),
@@ -290,7 +290,7 @@ func buildFKMethods(foreignKeys []sqlparser.ForeignKey, entityNamePlural string)
 }
 
 // collectImports gathers all necessary imports from columns
-func collectImports(columns []sqlparser.Column) []string {
+func collectImports(columns []schema.Column) []string {
 	importSet := make(map[string]bool)
 
 	for _, col := range columns {
@@ -310,8 +310,8 @@ func collectImports(columns []sqlparser.Column) []string {
 // generateFile renders a template and writes it to a file
 func generateFile(filepath string, tmplStr string, data interface{}) error {
 	funcMap := template.FuncMap{
-		"ToPascalCase": sqlparser.ToPascalCase,
-		"ToCamelCase":  sqlparser.ToCamelCase,
+		"ToPascalCase": schema.ToPascalCase,
+		"ToCamelCase":  schema.ToCamelCase,
 		"TrimPrefix":   strings.TrimPrefix,
 		"Contains":     strings.Contains,
 	}

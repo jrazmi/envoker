@@ -8,11 +8,11 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/jrazmi/envoker/app/generators/sqlparser"
+	"github.com/jrazmi/envoker/app/generators/schema"
 )
 
 // Generate creates bridge files from a parsed SQL schema
-func Generate(parseResult *sqlparser.ParseResult, config Config) (*GenerateResult, error) {
+func Generate(parseResult *schema.TableDefinition, config Config) (*GenerateResult, error) {
 	result := &GenerateResult{}
 
 	// Prepare template data
@@ -100,7 +100,7 @@ func Generate(parseResult *sqlparser.ParseResult, config Config) (*GenerateResul
 }
 
 // prepareTemplateData converts parsed schema to template data
-func prepareTemplateData(parseResult *sqlparser.ParseResult, config Config) (*TemplateData, error) {
+func prepareTemplateData(parseResult *schema.TableDefinition, config Config) (*TemplateData, error) {
 	schema := parseResult.Schema
 	naming := parseResult.Naming
 
@@ -122,7 +122,7 @@ func prepareTemplateData(parseResult *sqlparser.ParseResult, config Config) (*Te
 		PKURLParam:       naming.PKURLParam,
 		ModulePath:       config.ModulePath,
 		BridgePackage:    naming.BridgePackage,
-		HasStatusColumn:  sqlparser.HasStatusColumn(schema),
+		HasStatusColumn:  schema.HasStatusColumn(schema),
 	}
 
 	// Build field lists
@@ -134,16 +134,29 @@ func prepareTemplateData(parseResult *sqlparser.ParseResult, config Config) (*Te
 	// Build FK methods
 	data.ForeignKeys = buildFKBridgeMethods(schema.ForeignKeys, naming)
 
+	// Check if we need time import
+	data.NeedsTimeImport = needsTimeImport(schema.Columns)
+
 	return data, nil
 }
 
+// needsTimeImport checks if any column needs time import
+func needsTimeImport(columns []schema.Column) bool {
+	for _, col := range columns {
+		if strings.Contains(col.GoType, "time.Time") {
+			return true
+		}
+	}
+	return false
+}
+
 // buildBridgeFields creates bridge fields from columns
-func buildBridgeFields(columns []sqlparser.Column, omitEmpty bool) []BridgeField {
+func buildBridgeFields(columns []schema.Column, omitEmpty bool) []BridgeField {
 	var fields []BridgeField
 	for _, col := range columns {
 		field := BridgeField{
-			RepoName:   sqlparser.ToPascalCase(col.Name),
-			BridgeName: sqlparser.ToPascalCase(col.Name),
+			RepoName:   schema.ToPascalCase(col.Name),
+			BridgeName: schema.ToPascalCase(col.Name),
 			JSONName:   toCamelCase(col.Name),
 			GoType:     col.GoType,
 			DBColumn:   col.Name,
@@ -158,7 +171,7 @@ func buildBridgeFields(columns []sqlparser.Column, omitEmpty bool) []BridgeField
 }
 
 // buildCreateBridgeFields creates bridge fields for Create input
-func buildCreateBridgeFields(columns []sqlparser.Column, pk sqlparser.PrimaryKeyInfo) []BridgeField {
+func buildCreateBridgeFields(columns []schema.Column, pk schema.PrimaryKeyInfo) []BridgeField {
 	var fields []BridgeField
 	for _, col := range columns {
 		// Skip auto-generated PK
@@ -172,8 +185,8 @@ func buildCreateBridgeFields(columns []sqlparser.Column, pk sqlparser.PrimaryKey
 		}
 
 		field := BridgeField{
-			RepoName:   sqlparser.ToPascalCase(col.Name),
-			BridgeName: sqlparser.ToPascalCase(col.Name),
+			RepoName:   schema.ToPascalCase(col.Name),
+			BridgeName: schema.ToPascalCase(col.Name),
 			JSONName:   toCamelCase(col.Name),
 			GoType:     col.GoType,
 			DBColumn:   col.Name,
@@ -188,7 +201,7 @@ func buildCreateBridgeFields(columns []sqlparser.Column, pk sqlparser.PrimaryKey
 }
 
 // buildUpdateBridgeFields creates bridge fields for Update input
-func buildUpdateBridgeFields(columns []sqlparser.Column, pk sqlparser.PrimaryKeyInfo) []BridgeField {
+func buildUpdateBridgeFields(columns []schema.Column, pk schema.PrimaryKeyInfo) []BridgeField {
 	var fields []BridgeField
 	for _, col := range columns {
 		// Skip PK and auto-timestamps
@@ -202,8 +215,8 @@ func buildUpdateBridgeFields(columns []sqlparser.Column, pk sqlparser.PrimaryKey
 		}
 
 		field := BridgeField{
-			RepoName:   sqlparser.ToPascalCase(col.Name),
-			BridgeName: sqlparser.ToPascalCase(col.Name),
+			RepoName:   schema.ToPascalCase(col.Name),
+			BridgeName: schema.ToPascalCase(col.Name),
 			JSONName:   toCamelCase(col.Name),
 			GoType:     goType,
 			DBColumn:   col.Name,
@@ -218,7 +231,7 @@ func buildUpdateBridgeFields(columns []sqlparser.Column, pk sqlparser.PrimaryKey
 }
 
 // buildFilterBridgeFields creates bridge fields for Filter
-func buildFilterBridgeFields(columns []sqlparser.Column) []BridgeField {
+func buildFilterBridgeFields(columns []schema.Column) []BridgeField {
 	var fields []BridgeField
 	for _, col := range columns {
 		// Skip audit timestamps
@@ -242,8 +255,8 @@ func buildFilterBridgeFields(columns []sqlparser.Column) []BridgeField {
 		}
 
 		field := BridgeField{
-			RepoName:   sqlparser.ToPascalCase(col.Name),
-			BridgeName: sqlparser.ToPascalCase(col.Name),
+			RepoName:   schema.ToPascalCase(col.Name),
+			BridgeName: schema.ToPascalCase(col.Name),
 			JSONName:   toCamelCase(col.Name),
 			GoType:     goType,
 			DBColumn:   col.Name,
@@ -258,15 +271,15 @@ func buildFilterBridgeFields(columns []sqlparser.Column) []BridgeField {
 }
 
 // buildFKBridgeMethods creates FK method data from foreign keys
-func buildFKBridgeMethods(foreignKeys []sqlparser.ForeignKey, naming *sqlparser.NamingContext) []FKBridgeMethod {
+func buildFKBridgeMethods(foreignKeys []schema.ForeignKey, naming *schema.NamingContext) []FKBridgeMethod {
 	var methods []FKBridgeMethod
 	for _, fk := range foreignKeys {
 		method := FKBridgeMethod{
-			MethodName:    "httpListBy" + sqlparser.ToPascalCase(fk.ColumnName),
+			MethodName:    "httpListBy" + schema.ToPascalCase(fk.ColumnName),
 			RoutePath:     fmt.Sprintf("/%s/{%s}%s", toKebabCase(fk.RefTable), fk.ColumnName, naming.HTTPBasePath),
 			FKColumn:      fk.ColumnName,
-			FKGoName:      sqlparser.ToPascalCase(fk.ColumnName),
-			FKParamName:   sqlparser.ToCamelCase(fk.ColumnName),
+			FKGoName:      schema.ToPascalCase(fk.ColumnName),
+			FKParamName:   schema.ToCamelCase(fk.ColumnName),
 			FKURLParam:    fk.ColumnName,
 			FKGoType:      "string", // Assume string for UUIDs
 			RefEntityName: fk.EntityName,
@@ -278,7 +291,7 @@ func buildFKBridgeMethods(foreignKeys []sqlparser.ForeignKey, naming *sqlparser.
 
 // toCamelCase converts snake_case to camelCase
 func toCamelCase(s string) string {
-	return sqlparser.ToCamelCase(s)
+	return schema.ToCamelCase(s)
 }
 
 // toKebabCase converts snake_case to kebab-case

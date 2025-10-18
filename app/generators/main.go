@@ -7,11 +7,10 @@ import (
 	"strings"
 
 	"github.com/jrazmi/envoker/app/generators/bridgegen"
-	"github.com/jrazmi/envoker/app/generators/jsonschema"
 	"github.com/jrazmi/envoker/app/generators/orchestrator"
 	"github.com/jrazmi/envoker/app/generators/pgxstores"
 	"github.com/jrazmi/envoker/app/generators/repositorygen"
-	"github.com/jrazmi/envoker/app/generators/sqlparser"
+	"github.com/jrazmi/envoker/app/generators/schema"
 )
 
 func main() {
@@ -79,193 +78,24 @@ func runPgxStore(args []string) {
 }
 
 func runRepositoryGen(args []string) {
-	fs := flag.NewFlagSet("repositorygen", flag.ExitOnError)
-
-	sqlFile := fs.String("sql", "", "Path to SQL CREATE TABLE file")
-	outputDir := fs.String("output", ".", "Base output directory")
-	modulePath := fs.String("module", "github.com/jrazmi/envoker", "Go module path")
-	force := fs.Bool("force", false, "Overwrite existing files without prompting")
-
-	fs.Parse(args)
-
-	// Validate required flags
-	if *sqlFile == "" {
-		fmt.Println("Error: -sql flag is required")
-		fs.PrintDefaults()
-		os.Exit(1)
-	}
-
-	// Read SQL file
-	sqlContent, err := os.ReadFile(*sqlFile)
-	if err != nil {
-		fmt.Printf("Error reading SQL file: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Parse SQL
-	parseResult, err := sqlparser.Parse(string(sqlContent))
-	if err != nil {
-		fmt.Printf("Error parsing SQL: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Analyze and enrich
-	if err := sqlparser.Analyze(parseResult); err != nil {
-		fmt.Printf("Error analyzing SQL: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Generate repository files
-	config := repositorygen.Config{
-		ModulePath:     *modulePath,
-		OutputDir:      *outputDir,
-		ForceOverwrite: *force,
-	}
-
-	result, err := repositorygen.Generate(parseResult, config)
-	if err != nil {
-		fmt.Printf("Error generating repository: %v\n", err)
-		for _, e := range result.Errors {
-			fmt.Printf("  - %v\n", e)
-		}
-		os.Exit(1)
-	}
-
-	// Print success
-	fmt.Println("Repository generated successfully:")
-	fmt.Printf("  Model:      %s\n", result.ModelFile)
-	fmt.Printf("  Repository: %s\n", result.RepositoryFile)
-
-	if len(result.Warnings) > 0 {
-		fmt.Println("\nWarnings:")
-		for _, w := range result.Warnings {
-			fmt.Printf("  - %s\n", w)
-		}
-	}
+	fmt.Println("Error: repositorygen command has been deprecated.")
+	fmt.Println("The SQL parser has been removed. Please use the 'generate' command with JSON schema instead:")
+	fmt.Println("  generator generate -json=schema/reflector/output/public.json -table=<table_name>")
+	os.Exit(1)
 }
 
 func runStoreGen(args []string) {
-	fs := flag.NewFlagSet("storegen", flag.ExitOnError)
-
-	sqlFile := fs.String("sql", "", "Path to SQL CREATE TABLE file")
-	outputDir := fs.String("output", ".", "Base output directory")
-	modulePath := fs.String("module", "github.com/jrazmi/envoker", "Go module path")
-	force := fs.Bool("force", false, "Overwrite existing files without prompting")
-
-	fs.Parse(args)
-
-	// Validate required flags
-	if *sqlFile == "" {
-		fmt.Println("Error: -sql flag is required")
-		fs.PrintDefaults()
-		os.Exit(1)
-	}
-
-	// Read SQL file
-	sqlContent, err := os.ReadFile(*sqlFile)
-	if err != nil {
-		fmt.Printf("Error reading SQL file: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Parse SQL
-	parseResult, err := sqlparser.Parse(string(sqlContent))
-	if err != nil {
-		fmt.Printf("Error parsing SQL: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Analyze and enrich
-	if err := sqlparser.Analyze(parseResult); err != nil {
-		fmt.Printf("Error analyzing SQL: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Generate store files
-	config := pgxstores.SQLConfig{
-		ModulePath:     *modulePath,
-		OutputDir:      *outputDir,
-		ForceOverwrite: *force,
-	}
-
-	storeFile, err := pgxstores.GenerateFromSQL(parseResult, config)
-	if err != nil {
-		fmt.Printf("Error generating store: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Print success
-	fmt.Println("Store generated successfully:")
-	fmt.Printf("  Store: %s\n", storeFile)
+	fmt.Println("Error: storegen command has been deprecated.")
+	fmt.Println("The SQL parser has been removed. Please use the 'generate' command with JSON schema instead:")
+	fmt.Println("  generator generate -json=schema/reflector/output/public.json -table=<table_name>")
+	os.Exit(1)
 }
 
 func runBridgeGen(args []string) {
-	fs := flag.NewFlagSet("bridgegen", flag.ExitOnError)
-
-	sqlFile := fs.String("sql", "", "Path to SQL CREATE TABLE file")
-	outputDir := fs.String("output", ".", "Base output directory")
-	modulePath := fs.String("module", "github.com/jrazmi/envoker", "Go module path")
-	force := fs.Bool("force", false, "Overwrite existing files without prompting")
-
-	fs.Parse(args)
-
-	// Validate required flags
-	if *sqlFile == "" {
-		fmt.Println("Error: -sql flag is required")
-		fs.PrintDefaults()
-		os.Exit(1)
-	}
-
-	// Read SQL file
-	sqlContent, err := os.ReadFile(*sqlFile)
-	if err != nil {
-		fmt.Printf("Error reading SQL file: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Parse SQL
-	parseResult, err := sqlparser.Parse(string(sqlContent))
-	if err != nil {
-		fmt.Printf("Error parsing SQL: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Analyze and enrich
-	if err := sqlparser.Analyze(parseResult); err != nil {
-		fmt.Printf("Error analyzing SQL: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Generate bridge files
-	config := bridgegen.Config{
-		ModulePath:     *modulePath,
-		OutputDir:      *outputDir,
-		ForceOverwrite: *force,
-	}
-
-	result, err := bridgegen.Generate(parseResult, config)
-	if err != nil {
-		fmt.Printf("Error generating bridge: %v\n", err)
-		for _, e := range result.Errors {
-			fmt.Printf("  - %v\n", e)
-		}
-		os.Exit(1)
-	}
-
-	// Print success
-	fmt.Println("Bridge generated successfully:")
-	fmt.Printf("  Bridge:  %s\n", result.BridgeFile)
-	fmt.Printf("  HTTP:    %s\n", result.HTTPFile)
-	fmt.Printf("  Model:   %s\n", result.ModelFile)
-	fmt.Printf("  Marshal: %s\n", result.MarshalFile)
-	fmt.Printf("  FOP:     %s\n", result.FOPFile)
-
-	if len(result.Warnings) > 0 {
-		fmt.Println("\nWarnings:")
-		for _, w := range result.Warnings {
-			fmt.Printf("  - %s\n", w)
-		}
-	}
+	fmt.Println("Error: bridgegen command has been deprecated.")
+	fmt.Println("The SQL parser has been removed. Please use the 'generate' command with JSON schema instead:")
+	fmt.Println("  generator generate -json=schema/reflector/output/public.json -table=<table_name>")
+	os.Exit(1)
 }
 
 func runGenerateAll(args []string) {

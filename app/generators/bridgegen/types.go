@@ -47,6 +47,9 @@ type TemplateData struct {
 	// Schema features
 	BridgePackage   string // e.g., "tasksrepobridge"
 	HasStatusColumn bool   // True if table has a status column for archive support
+
+	// Import tracking
+	NeedsTimeImport bool // True if any field uses time.Time
 }
 
 // BridgeField represents a field in the bridge model

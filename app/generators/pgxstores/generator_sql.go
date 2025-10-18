@@ -8,7 +8,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/jrazmi/envoker/app/generators/sqlparser"
+	"github.com/jrazmi/envoker/app/generators/schema"
 )
 
 // SQLConfig holds configuration for SQL-based generation
@@ -19,7 +19,7 @@ type SQLConfig struct {
 }
 
 // GenerateFromSQL creates a pgx store from parsed SQL schema
-func GenerateFromSQL(parseResult *sqlparser.ParseResult, config SQLConfig) (string, error) {
+func GenerateFromSQL(parseResult *schema.ParseResult, config SQLConfig) (string, error) {
 	schema := parseResult.Schema
 	naming := parseResult.Naming
 
@@ -77,8 +77,8 @@ func GenerateFromSQL(parseResult *sqlparser.ParseResult, config SQLConfig) (stri
 		"ForeignKeys":      buildFKMethodData(schema.ForeignKeys, schema.Columns, naming),
 		"NeedsTime":        needsTimeImport(schema.Columns),
 		"NeedsJSON":        needsJSONImport(schema.Columns),
-		"HasStatusColumn":  sqlparser.HasStatusColumn(schema),
-		"HasDeletedAt":     sqlparser.HasDeletedAtColumn(schema),
+		"HasStatusColumn":  schema.HasStatusColumn(schema),
+		"HasDeletedAt":     schema.HasDeletedAtColumn(schema),
 		"OrderByFields":    buildOrderByFields(schema.Columns),
 		"SearchableFields": buildSearchableFields(schema.Columns),
 	}
@@ -119,12 +119,12 @@ func GenerateFromSQL(parseResult *sqlparser.ParseResult, config SQLConfig) (stri
 	return storeGenFile, nil
 }
 
-// convertColumnsToFields converts sqlparser.Column to Field
-func convertColumnsToFields(columns []sqlparser.Column) []Field {
+// convertColumnsToFields converts schema.Column to Field
+func convertColumnsToFields(columns []schema.Column) []Field {
 	var fields []Field
 	for _, col := range columns {
 		field := Field{
-			Name:       sqlparser.ToPascalCase(col.Name),
+			Name:       schema.ToPascalCase(col.Name),
 			DBColumn:   col.Name,
 			GoType:     col.GoType,
 			IsPointer:  strings.HasPrefix(col.GoType, "*"),
@@ -136,7 +136,7 @@ func convertColumnsToFields(columns []sqlparser.Column) []Field {
 }
 
 // buildCreateFields creates fields for Create struct (excludes auto-generated)
-func buildCreateFields(columns []sqlparser.Column, pk sqlparser.PrimaryKeyInfo) []Field {
+func buildCreateFields(columns []schema.Column, pk schema.PrimaryKeyInfo) []Field {
 	var fields []Field
 	for _, col := range columns {
 		// Skip auto-generated PK
@@ -150,7 +150,7 @@ func buildCreateFields(columns []sqlparser.Column, pk sqlparser.PrimaryKeyInfo) 
 		}
 
 		field := Field{
-			Name:       sqlparser.ToPascalCase(col.Name),
+			Name:       schema.ToPascalCase(col.Name),
 			DBColumn:   col.Name,
 			GoType:     col.GoType,
 			IsPointer:  strings.HasPrefix(col.GoType, "*"),
@@ -162,7 +162,7 @@ func buildCreateFields(columns []sqlparser.Column, pk sqlparser.PrimaryKeyInfo) 
 }
 
 // buildUpdateFields creates fields for Update struct (all optional)
-func buildUpdateFields(columns []sqlparser.Column, pk sqlparser.PrimaryKeyInfo) []Field {
+func buildUpdateFields(columns []schema.Column, pk schema.PrimaryKeyInfo) []Field {
 	var fields []Field
 	for _, col := range columns {
 		// Skip PK and auto-timestamps
@@ -176,7 +176,7 @@ func buildUpdateFields(columns []sqlparser.Column, pk sqlparser.PrimaryKeyInfo) 
 		}
 
 		field := Field{
-			Name:       sqlparser.ToPascalCase(col.Name),
+			Name:       schema.ToPascalCase(col.Name),
 			DBColumn:   col.Name,
 			GoType:     goType,
 			IsPointer:  true,
@@ -188,7 +188,7 @@ func buildUpdateFields(columns []sqlparser.Column, pk sqlparser.PrimaryKeyInfo) 
 }
 
 // buildFilterFields creates fields for Filter struct
-func buildFilterFields(columns []sqlparser.Column) []Field {
+func buildFilterFields(columns []schema.Column) []Field {
 	var fields []Field
 	for _, col := range columns {
 		// Skip audit timestamps
@@ -202,7 +202,7 @@ func buildFilterFields(columns []sqlparser.Column) []Field {
 		}
 
 		field := Field{
-			Name:       sqlparser.ToPascalCase(col.Name),
+			Name:       schema.ToPascalCase(col.Name),
 			DBColumn:   col.Name,
 			GoType:     goType,
 			IsPointer:  true,
@@ -222,7 +222,7 @@ type FKMethodData struct {
 }
 
 // buildFKMethodData creates FK method data from foreign keys
-func buildFKMethodData(foreignKeys []sqlparser.ForeignKey, columns []sqlparser.Column, naming *sqlparser.NamingContext) []FKMethodData {
+func buildFKMethodData(foreignKeys []schema.ForeignKey, columns []schema.Column, naming *schema.NamingContext) []FKMethodData {
 	var methods []FKMethodData
 	for _, fk := range foreignKeys {
 		// Look up the actual Go type for this FK column
@@ -239,7 +239,7 @@ func buildFKMethodData(foreignKeys []sqlparser.ForeignKey, columns []sqlparser.C
 			MethodName:  "List" + fk.MethodSuffix,
 			FKColumn:    fk.ColumnName,
 			FKGoType:    fkGoType,
-			FKParamName: sqlparser.ToCamelCase(fk.ColumnName),
+			FKParamName: schema.ToCamelCase(fk.ColumnName),
 		}
 		methods = append(methods, method)
 	}
@@ -247,7 +247,7 @@ func buildFKMethodData(foreignKeys []sqlparser.ForeignKey, columns []sqlparser.C
 }
 
 // needsTimeImport checks if any column needs time import
-func needsTimeImport(columns []sqlparser.Column) bool {
+func needsTimeImport(columns []schema.Column) bool {
 	for _, col := range columns {
 		if strings.Contains(col.GoType, "time.Time") {
 			return true
@@ -257,7 +257,7 @@ func needsTimeImport(columns []sqlparser.Column) bool {
 }
 
 // needsJSONImport checks if any column needs json import
-func needsJSONImport(columns []sqlparser.Column) bool {
+func needsJSONImport(columns []schema.Column) bool {
 	for _, col := range columns {
 		if strings.Contains(col.GoType, "json.RawMessage") {
 			return true
@@ -282,7 +282,7 @@ type OrderByField struct {
 }
 
 // buildFilterFieldsForFop creates filter field metadata for fop_gen.go
-func buildFilterFieldsForFop(columns []sqlparser.Column) []FilterFieldForFop {
+func buildFilterFieldsForFop(columns []schema.Column) []FilterFieldForFop {
 	var fields []FilterFieldForFop
 
 	for _, col := range columns {
@@ -298,9 +298,9 @@ func buildFilterFieldsForFop(columns []sqlparser.Column) []FilterFieldForFop {
 		// Skip timestamp columns - they're handled specially
 		if col.Name == "created_at" || col.Name == "updated_at" {
 			fields = append(fields, FilterFieldForFop{
-				GoName:     sqlparser.ToPascalCase(col.Name),
+				GoName:     schema.ToPascalCase(col.Name),
 				DBColumn:   col.Name,
-				ParamName:  sqlparser.ToCamelCase(col.Name),
+				ParamName:  schema.ToCamelCase(col.Name),
 				FilterType: "timestamp_range",
 				Comment:    "Filter by " + col.Name,
 			})
@@ -310,9 +310,9 @@ func buildFilterFieldsForFop(columns []sqlparser.Column) []FilterFieldForFop {
 		// Use exact match filters for all other fields to match the repository filter definition
 		// The repository filter uses simple pointer fields like *string, *int, etc.
 		fields = append(fields, FilterFieldForFop{
-			GoName:     sqlparser.ToPascalCase(col.Name),
+			GoName:     schema.ToPascalCase(col.Name),
 			DBColumn:   col.Name,
-			ParamName:  sqlparser.ToCamelCase(col.Name),
+			ParamName:  schema.ToCamelCase(col.Name),
 			FilterType: "exact",
 			Comment:    "Filter by " + col.Name,
 		})
@@ -322,7 +322,7 @@ func buildFilterFieldsForFop(columns []sqlparser.Column) []FilterFieldForFop {
 }
 
 // buildOrderByFields creates a list of fields that can be used for ordering
-func buildOrderByFields(columns []sqlparser.Column) []OrderByField {
+func buildOrderByFields(columns []schema.Column) []OrderByField {
 	var fields []OrderByField
 
 	for _, col := range columns {
@@ -332,7 +332,7 @@ func buildOrderByFields(columns []sqlparser.Column) []OrderByField {
 		}
 
 		fields = append(fields, OrderByField{
-			GoName:   sqlparser.ToPascalCase(col.Name),
+			GoName:   schema.ToPascalCase(col.Name),
 			DBColumn: col.Name,
 		})
 	}
@@ -341,7 +341,7 @@ func buildOrderByFields(columns []sqlparser.Column) []OrderByField {
 }
 
 // buildSearchableFields returns a list of text columns suitable for full-text search
-func buildSearchableFields(columns []sqlparser.Column) []string {
+func buildSearchableFields(columns []schema.Column) []string {
 	var fields []string
 
 	for _, col := range columns {

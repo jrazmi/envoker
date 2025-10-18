@@ -1,4 +1,3 @@
-// package fop helps with filter order and pagination
 package fop
 
 import (

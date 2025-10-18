@@ -1,7 +1,6 @@
 package config
 
 import (
-	"github.com/jrazmi/envoker/core/repositories/userrepo"
 	"github.com/jrazmi/envoker/sdk/logger"
 	"github.com/jrazmi/envoker/sdk/telemetry"
 )
@@ -18,7 +17,7 @@ type UseCases struct {
 // Repositories represents the specific repostiories that this instance of envoker needs.
 // Add any custom repositories here should you need to expand on the defaults.
 type Repositories struct {
-	User *userrepo.Repository
+	// User *userrepo.Repository
 }
 
 // Envoker is the overall configuration for the envoker application.

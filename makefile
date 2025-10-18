@@ -1,5 +1,6 @@
 
-GOLANG := golang:1.25.1
+GOLANG := golang:1.25.3
+TOOLING_PATH = ./app/tooling
 
 NAMESPACE := envoker
 VERSION := 0.0.1
@@ -29,142 +30,99 @@ tidy:
 	go mod tidy
 	go mod vendor
 
-# Generate all pgx stores (legacy)
-generate-pgxstores:
-	@echo "Generating pgx stores..."
-	@find ./core/repositories -type f -name "store.go" -path "*/stores/*pgxstore/*" -execdir go generate \;
+# Drop and recreate database schema
+db-reset-local:
+	@echo "🗑️  Dropping and recreating public schema..."
+	@docker exec $(NAME)-postgres psql -U db_user -d database -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 
-# Generate from specific SQL file (all layers)
-# Usage: make generate-sql SQL=schema/users.sql
-generate-resource:
-	@if [ -z "$(SQL)" ]; then \
-		echo "❌ Error: SQL parameter is required"; \
-		echo "Usage: make generate-sql SQL=schema/users.sql"; \
+# Reflect database schema to JSON
+db-reflect:
+	@echo "🔍 Reflecting database schema..."
+	@go run app/tooling/main.go reflect-schema -schema=public
+
+# Generate code from reflected JSON - ALL tables
+generate-all:
+	@echo "🚀 Generating code for all tables from reflected schema..."
+	@go run app/generators/main.go generate -json=schema/reflector/output/public.json -all -force
+
+# Generate code from reflected JSON - SINGLE table
+# Usage: make generate-table TABLE=api_keys
+generate-table:
+	@if [ -z "$(TABLE)" ]; then \
+		echo "❌ Error: TABLE parameter is required"; \
+		echo "Usage: make generate-table TABLE=api_keys"; \
 		exit 1; \
 	fi
-	@echo "🚀 Generating all layers from $(SQL)..."
-	@go run app/generators/main.go generate -sql=$(SQL) -force
+	@echo "🚀 Generating code for table $(TABLE)..."
+	@go run app/generators/main.go generate -json=schema/reflector/output/public.json -table=$(TABLE) -force
 
-# Generate only Repository layer
-# Usage: make generate-repository SQL=schema/users.sql
-generate-repository:
-	@if [ -z "$(SQL)" ]; then \
-		echo "❌ Error: SQL parameter is required"; \
-		echo "Usage: make generate-repository SQL=schema/users.sql"; \
-		exit 1; \
-	fi
-	@echo "📦 Generating Repository layer from $(SQL)..."
-	@go run app/generators/main.go repositorygen -sql=$(SQL) -force
+# Full workflow: reset DB -> migrate -> reflect -> generate all
+db-code-full-reset:
+	@echo "🔄 Running full database reset and code generation..."
+	@$(MAKE) db-reset-local
+	@$(MAKE) migrate
+	@$(MAKE) db-reflect
+	@$(MAKE) generate-all
+	@echo "✅ Full reset complete!"
 
-# Generate only Store layer
-# Usage: make generate-store SQL=schema/users.sql
-generate-store:
-	@if [ -z "$(SQL)" ]; then \
-		echo "❌ Error: SQL parameter is required"; \
-		echo "Usage: make generate-store SQL=schema/users.sql"; \
-		exit 1; \
-	fi
-	@echo "🗄️  Generating Store layer from $(SQL)..."
-	@go run app/generators/main.go storegen -sql=$(SQL) -force
-
-# Generate only Bridge layer
-# Usage: make generate-bridge SQL=schema/users.sql
-generate-bridge:
-	@if [ -z "$(SQL)" ]; then \
-		echo "❌ Error: SQL parameter is required"; \
-		echo "Usage: make generate-bridge SQL=schema/users.sql"; \
-		exit 1; \
-	fi
-	@echo "🌉 Generating Bridge layer from $(SQL)..."
-	@go run app/generators/main.go bridgegen -sql=$(SQL) -force
-
-# Generate specific layers
-# Usage: make generate-layers SQL=schema/users.sql LAYERS=repository,store
-generate-layers:
-	@if [ -z "$(SQL)" ]; then \
-		echo "❌ Error: SQL parameter is required"; \
-		echo "Usage: make generate-layers SQL=schema/users.sql LAYERS=repository,store"; \
-		exit 1; \
-	fi
-	@if [ -z "$(LAYERS)" ]; then \
-		echo "❌ Error: LAYERS parameter is required"; \
-		echo "Usage: make generate-layers SQL=schema/users.sql LAYERS=repository,store"; \
-		exit 1; \
-	fi
-	@echo "🚀 Generating layers [$(LAYERS)] from $(SQL)..."
-	@go run app/generators/main.go generate -sql=$(SQL) -layers=$(LAYERS) -force
-
-# Generate from all SQL files in schema/
-generate-all-sql:
-	@echo "🚀 Generating from all SQL files in schema/..."
-	@./scripts/generate.sh all -force
-
-# Generate all code (expand this as you add more generators)
-generate: generate-all-sql
+# Generate all code - uses JSON-based generation from reflected schema
+generate: generate-all
 
 # Help for generator commands
 generate-help:
 	@echo "Generator Makefile Targets:"
 	@echo ""
-	@echo "Full Stack Generation:"
-	@echo "  make generate                      - Generate from all SQL files in schema/"
-	@echo "  make generate-sql SQL=<file>       - Generate all layers from specific SQL file"
-	@echo "  make generate-all-sql              - Generate from all SQL files"
-	@echo ""
-	@echo "Individual Layer Generation:"
-	@echo "  make generate-repository SQL=<file> - Generate only Repository layer"
-	@echo "  make generate-store SQL=<file>      - Generate only Store layer"
-	@echo "  make generate-bridge SQL=<file>     - Generate only Bridge layer"
-	@echo ""
-	@echo "Selective Layer Generation:"
-	@echo "  make generate-layers SQL=<file> LAYERS=<layers> - Generate specific layers"
-	@echo "    LAYERS options: repository,store,bridge (comma-separated)"
-	@echo ""
-	@echo "Legacy:"
-	@echo "  make generate-pgxstores            - Legacy pgx store generation"
+	@echo "📖 Code Generation Workflow (JSON-based from reflected schema):"
+	@echo "  make db-reset-local                - Drop and recreate database schema"
+	@echo "  make migrate                       - Run database migrations"
+	@echo "  make db-reflect                    - Reflect database schema to JSON"
+	@echo "  make generate-all                  - Generate code for ALL tables from JSON"
+	@echo "  make generate-table TABLE=<name>   - Generate code for SINGLE table from JSON"
+	@echo "  make db-code-full-reset            - Full workflow: reset -> migrate -> reflect -> generate"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make generate-sql SQL=schema/users.sql"
-	@echo "  make generate-repository SQL=schema/users.sql"
-	@echo "  make generate-store SQL=schema/users.sql"
-	@echo "  make generate-bridge SQL=schema/users.sql"
-	@echo "  make generate-layers SQL=schema/users.sql LAYERS=repository,store"
-	@echo "  make generate"
+	@echo "  make db-code-full-reset            # Complete reset and regeneration"
+	@echo "  make generate-table TABLE=tasks    # Regenerate single table"
+	@echo "  make generate-all                  # Regenerate all tables"
+	@echo "  make db-reflect                    # Just update JSON from current DB"
 
 
 
-dev:
-	wgo run app/envoker/main.go
+
 	
-dev-admin:
-	cd app/envoker/admin/react && pnpm dev
+
+########################################
+## DEV
+######################
+# watch:
+# 	wgo run app/api/main.go
+# dev:
+# 	wgo run app/envoker/main.go
 	
-tidy:
-	go mod tidy
-	go mod vendor
-
-
-generate-pgxstores:
-	go generate ./core/repositories/pgxstores
-
-
-# DATA
-
+# dev-admin:
+# 	cd app/envoker/admin/react && pnpm dev
+########################################
+## DATA
+######################
 dev-data-up:
-	docker-compose -f workshop/dev/local-data-compose.yml up  -d
+	docker-compose -p envoker -f workshop/dev/envoker-local-compose.yml up  -d
 
 dev-data-down:
-	docker-compose -f workshop/dev/local-data-compose.yml down
+	docker-compose -p envoker -f workshop/dev/envoker-local-compose.yml down
 
 dev-psql:
-	PGPASSWORD=password psql -h localhost -p 5432 -U postgres -d postgres
+	PGPASSWORD=admin psql -h localhost -p 5432 -U postgres -d envoker
+
+.PHONY: migrate
+migrate: ## Run database migrations
+	@echo "Running database migrations..."
+	@go run $(TOOLING_PATH)/main.go migrate
 
 
 
-
-
-## --------------------------- RUN
-
+########################################
+## DOCKER RUN
+######################
 docker-run:
 	docker run -p 3000:3000 --env-file .env $(APP_IMAGE_LATEST) 
 

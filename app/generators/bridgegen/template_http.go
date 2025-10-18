@@ -12,7 +12,6 @@ import (
 
 	"{{.ModulePath}}/bridge/scaffolding/errs"
 	"{{.ModulePath}}/bridge/scaffolding/fopbridge"
-	"{{.ModulePath}}/core/repositories/{{.RepoPackage}}"
 	"{{.ModulePath}}/core/scaffolding/fop"
 	"{{.ModulePath}}/infrastructure/web"
 )
