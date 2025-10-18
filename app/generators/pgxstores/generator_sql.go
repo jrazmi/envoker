@@ -11,23 +11,23 @@ import (
 	"github.com/jrazmi/envoker/app/generators/schema"
 )
 
-// SQLConfig holds configuration for SQL-based generation
-type SQLConfig struct {
+// GenerateConfig holds configuration for generation
+type GenerateConfig struct {
 	ModulePath     string
 	OutputDir      string
 	ForceOverwrite bool
 }
 
-// GenerateFromSQL creates a pgx store from parsed SQL schema
-func GenerateFromSQL(parseResult *schema.ParseResult, config SQLConfig) (string, error) {
-	schema := parseResult.Schema
-	naming := parseResult.Naming
+// GenerateFromSchema creates a pgx store from a table definition
+func GenerateFromSchema(tableDef *schema.TableDefinition, config GenerateConfig) (string, error) {
+	tableSchema := tableDef.Schema
+	naming := tableDef.Naming
 
 	// Build template configuration
 	cfg := Config{
 		Entity:      naming.EntityName,
-		Table:       schema.Name,
-		Schema:      schema.Schema,
+		Table:       tableSchema.Name,
+		Schema:      tableSchema.Schema,
 		PK:          naming.PKColumn,
 		PackageName: naming.StorePackage,
 		ModulePath:  config.ModulePath,
@@ -39,10 +39,10 @@ func GenerateFromSQL(parseResult *schema.ParseResult, config SQLConfig) (string,
 
 	// Convert parsed columns to Field format
 	fields := make(map[string][]Field)
-	fields[cfg.Entity] = convertColumnsToFields(schema.Columns)
-	fields[cfg.Create] = buildCreateFields(schema.Columns, schema.PrimaryKey)
-	fields[cfg.Update] = buildUpdateFields(schema.Columns, schema.PrimaryKey)
-	fields[cfg.Filter] = buildFilterFields(schema.Columns)
+	fields[cfg.Entity] = convertColumnsToFields(tableSchema.Columns)
+	fields[cfg.Create] = buildCreateFields(tableSchema.Columns, tableSchema.PrimaryKey)
+	fields[cfg.Update] = buildUpdateFields(tableSchema.Columns, tableSchema.PrimaryKey)
+	fields[cfg.Filter] = buildFilterFields(tableSchema.Columns)
 
 	// Check if PK is in Create struct
 	pkInCreate := false
@@ -64,7 +64,7 @@ func GenerateFromSQL(parseResult *schema.ParseResult, config SQLConfig) (string,
 		"Table":            cfg.Table,
 		"PK":               cfg.PK,
 		"PKGoName":         naming.PKGoName,
-		"PKGoType":         strings.TrimPrefix(schema.PrimaryKey.GoType, "*"),
+		"PKGoType":         strings.TrimPrefix(tableSchema.PrimaryKey.GoType, "*"),
 		"PKParamName":      naming.PKParamName,
 		"Create":           cfg.Create,
 		"Update":           cfg.Update,
@@ -72,15 +72,15 @@ func GenerateFromSQL(parseResult *schema.ParseResult, config SQLConfig) (string,
 		"EntityFields":     fields[cfg.Entity],
 		"CreateFields":     fields[cfg.Create],
 		"UpdateFields":     fields[cfg.Update],
-		"FilterFields":     buildFilterFieldsForFop(schema.Columns),
+		"FilterFields":     buildFilterFieldsForFop(tableSchema.Columns),
 		"PKInCreate":       pkInCreate,
-		"ForeignKeys":      buildFKMethodData(schema.ForeignKeys, schema.Columns, naming),
-		"NeedsTime":        needsTimeImport(schema.Columns),
-		"NeedsJSON":        needsJSONImport(schema.Columns),
-		"HasStatusColumn":  schema.HasStatusColumn(schema),
-		"HasDeletedAt":     schema.HasDeletedAtColumn(schema),
-		"OrderByFields":    buildOrderByFields(schema.Columns),
-		"SearchableFields": buildSearchableFields(schema.Columns),
+		"ForeignKeys":      buildFKMethodData(tableSchema.ForeignKeys, tableSchema.Columns, naming),
+		"NeedsTime":        needsTimeImport(tableSchema.Columns),
+		"NeedsJSON":        needsJSONImport(tableSchema.Columns),
+		"HasStatusColumn":  schema.HasStatusColumn(tableSchema),
+		"HasDeletedAt":     schema.HasDeletedAtColumn(tableSchema),
+		"OrderByFields":    buildOrderByFields(tableSchema.Columns),
+		"SearchableFields": buildSearchableFields(tableSchema.Columns),
 	}
 
 	// Determine output paths

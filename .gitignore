@@ -8,10 +8,10 @@ localdocker-compose.yml
 #data
 zlocals
 dumps
-workshop/dev/data
+workshop/dev/data/**
 workshop/dev/firebase/firebase-debug.log
 workshop/dev/firebase/firestore-debug.log
-workshop/dev/firebase/data
+workshop/dev/firebase/data/**
 
 #llm
 *.dump.txt

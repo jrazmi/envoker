@@ -11,19 +11,19 @@ import (
 	"github.com/jrazmi/envoker/app/generators/schema"
 )
 
-// Generate creates bridge files from a parsed SQL schema
-func Generate(parseResult *schema.TableDefinition, config Config) (*GenerateResult, error) {
+// Generate creates bridge files from a table definition
+func Generate(tableDef *schema.TableDefinition, config Config) (*GenerateResult, error) {
 	result := &GenerateResult{}
 
 	// Prepare template data
-	templateData, err := prepareTemplateData(parseResult, config)
+	templateData, err := prepareTemplateData(tableDef, config)
 	if err != nil {
 		result.Errors = append(result.Errors, err)
 		return result, err
 	}
 
 	// Determine output paths
-	bridgeDir := filepath.Join(config.OutputDir, parseResult.Naming.BridgePath)
+	bridgeDir := filepath.Join(config.OutputDir, tableDef.Naming.BridgePath)
 	bridgeInitFile := filepath.Join(bridgeDir, "bridge.go")
 	httpRoutesFile := filepath.Join(bridgeDir, "http.go") // User-editable route registration (never overwrite)
 	httpFile := filepath.Join(bridgeDir, "http_gen.go")   // Generated HTTP handlers
@@ -100,9 +100,9 @@ func Generate(parseResult *schema.TableDefinition, config Config) (*GenerateResu
 }
 
 // prepareTemplateData converts parsed schema to template data
-func prepareTemplateData(parseResult *schema.TableDefinition, config Config) (*TemplateData, error) {
-	schema := parseResult.Schema
-	naming := parseResult.Naming
+func prepareTemplateData(tableDef *schema.TableDefinition, config Config) (*TemplateData, error) {
+	tableSchema := tableDef.Schema
+	naming := tableDef.Naming
 
 	data := &TemplateData{
 		PackageName:      naming.BridgePackage,
@@ -117,25 +117,25 @@ func prepareTemplateData(parseResult *schema.TableDefinition, config Config) (*T
 		PKColumn:         naming.PKColumn,
 		PKGoName:         naming.PKGoName,
 		PKJSONName:       toCamelCase(naming.PKColumn),
-		PKGoType:         strings.TrimPrefix(schema.PrimaryKey.GoType, "*"),
+		PKGoType:         strings.TrimPrefix(tableSchema.PrimaryKey.GoType, "*"),
 		PKParamName:      naming.PKParamName,
 		PKURLParam:       naming.PKURLParam,
 		ModulePath:       config.ModulePath,
 		BridgePackage:    naming.BridgePackage,
-		HasStatusColumn:  schema.HasStatusColumn(schema),
+		HasStatusColumn:  schema.HasStatusColumn(tableSchema),
 	}
 
 	// Build field lists
-	data.EntityFields = buildBridgeFields(schema.Columns, false)
-	data.CreateFields = buildCreateBridgeFields(schema.Columns, schema.PrimaryKey)
-	data.UpdateFields = buildUpdateBridgeFields(schema.Columns, schema.PrimaryKey)
-	data.FilterFields = buildFilterBridgeFields(schema.Columns)
+	data.EntityFields = buildBridgeFields(tableSchema.Columns, false)
+	data.CreateFields = buildCreateBridgeFields(tableSchema.Columns, tableSchema.PrimaryKey)
+	data.UpdateFields = buildUpdateBridgeFields(tableSchema.Columns, tableSchema.PrimaryKey)
+	data.FilterFields = buildFilterBridgeFields(tableSchema.Columns)
 
 	// Build FK methods
-	data.ForeignKeys = buildFKBridgeMethods(schema.ForeignKeys, naming)
+	data.ForeignKeys = buildFKBridgeMethods(tableSchema.ForeignKeys, naming)
 
 	// Check if we need time import
-	data.NeedsTimeImport = needsTimeImport(schema.Columns)
+	data.NeedsTimeImport = needsTimeImport(tableSchema.Columns)
 
 	return data, nil
 }

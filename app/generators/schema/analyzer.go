@@ -20,6 +20,20 @@ func Analyze(result *ParseResult) error {
 	return nil
 }
 
+// AnalyzeTableDefinition enriches a TableDefinition with derived naming conventions and relationship analysis
+func AnalyzeTableDefinition(tableDef *TableDefinition) error {
+	// Derive naming context
+	naming := deriveNamingContext(tableDef.Schema)
+	tableDef.Naming = naming
+
+	// Analyze and enrich foreign keys with derived names
+	for i := range tableDef.Schema.ForeignKeys {
+		enrichForeignKey(&tableDef.Schema.ForeignKeys[i])
+	}
+
+	return nil
+}
+
 // deriveNamingContext generates all naming conventions from the table name
 func deriveNamingContext(schema *TableSchema) *NamingContext {
 	naming := &NamingContext{

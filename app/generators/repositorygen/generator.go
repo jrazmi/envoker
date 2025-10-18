@@ -11,19 +11,19 @@ import (
 	"github.com/jrazmi/envoker/app/generators/schema"
 )
 
-// Generate creates repository files from a parsed SQL schema
-func Generate(parseResult *schema.ParseResult, config Config) (*GenerateResult, error) {
+// Generate creates repository files from a table definition
+func Generate(tableDef *schema.TableDefinition, config Config) (*GenerateResult, error) {
 	result := &GenerateResult{}
 
 	// Prepare template data
-	templateData, err := prepareTemplateData(parseResult, config)
+	templateData, err := prepareTemplateData(tableDef, config)
 	if err != nil {
 		result.Errors = append(result.Errors, err)
 		return result, err
 	}
 
 	// Determine output paths
-	repoDir := filepath.Join(config.OutputDir, parseResult.Naming.RepoPath)
+	repoDir := filepath.Join(config.OutputDir, tableDef.Naming.RepoPath)
 	modelFile := filepath.Join(repoDir, "model_gen.go")
 	repoFile := filepath.Join(repoDir, "repo.go")
 	repoGenFile := filepath.Join(repoDir, "repo_gen.go")
@@ -82,10 +82,10 @@ func Generate(parseResult *schema.ParseResult, config Config) (*GenerateResult, 
 	return result, nil
 }
 
-// prepareTemplateData converts parsed schema to template data
-func prepareTemplateData(parseResult *schema.ParseResult, config Config) (*TemplateData, error) {
-	schema := parseResult.Schema
-	naming := parseResult.Naming
+// prepareTemplateData converts table definition to template data
+func prepareTemplateData(tableDef *schema.TableDefinition, config Config) (*TemplateData, error) {
+	tableSchema := tableDef.Schema
+	naming := tableDef.Naming
 
 	data := &TemplateData{
 		PackageName:         naming.PackageName,
@@ -97,19 +97,19 @@ func prepareTemplateData(parseResult *schema.ParseResult, config Config) (*Templ
 		FilterStructName:    "Filter" + naming.EntityName,
 		PKColumn:            naming.PKColumn,
 		PKGoName:            naming.PKGoName,
-		PKGoType:            strings.TrimPrefix(schema.PrimaryKey.GoType, "*"),
+		PKGoType:            strings.TrimPrefix(tableSchema.PrimaryKey.GoType, "*"),
 		PKParamName:         naming.PKParamName,
 		StorerInterfaceName: "Storer",
-		Columns:             schema.Columns,
-		HasStatusColumn:     schema.HasStatusColumn(schema),
-		HasDeletedAt:        schema.HasDeletedAtColumn(schema),
+		Columns:             tableSchema.Columns,
+		HasStatusColumn:     schema.HasStatusColumn(tableSchema),
+		HasDeletedAt:        schema.HasDeletedAtColumn(tableSchema),
 	}
 
 	// Build field lists
-	data.EntityFields = buildEntityFields(schema.Columns)
-	data.CreateFields = buildCreateFields(schema.Columns, schema.PrimaryKey)
-	data.UpdateFields = buildUpdateFields(schema.Columns, schema.PrimaryKey)
-	data.FilterFields = buildFilterFields(schema.Columns, schema.PrimaryKey)
+	data.EntityFields = buildEntityFields(tableSchema.Columns)
+	data.CreateFields = buildCreateFields(tableSchema.Columns, tableSchema.PrimaryKey)
+	data.UpdateFields = buildUpdateFields(tableSchema.Columns, tableSchema.PrimaryKey)
+	data.FilterFields = buildFilterFields(tableSchema.Columns, tableSchema.PrimaryKey)
 
 	// Check if PK is in Create struct
 	data.PKInCreate = false
@@ -123,7 +123,7 @@ func prepareTemplateData(parseResult *schema.ParseResult, config Config) (*Templ
 	// Check if CreatedAt exists and if it's a pointer
 	data.HasCreatedAt = false
 	data.CreatedAtIsPointer = false
-	for _, col := range schema.Columns {
+	for _, col := range tableSchema.Columns {
 		if col.Name == "created_at" {
 			data.HasCreatedAt = true
 			if strings.HasPrefix(col.GoType, "*") {
@@ -134,10 +134,10 @@ func prepareTemplateData(parseResult *schema.ParseResult, config Config) (*Templ
 	}
 
 	// Build FK method info
-	data.ForeignKeys = buildFKMethods(schema.ForeignKeys, naming.EntityNamePlural)
+	data.ForeignKeys = buildFKMethods(tableSchema.ForeignKeys, naming.EntityNamePlural)
 
 	// Collect imports
-	imports := collectImports(schema.Columns)
+	imports := collectImports(tableSchema.Columns)
 	data.Imports = imports
 
 	return data, nil

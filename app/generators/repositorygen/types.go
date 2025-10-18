@@ -1,7 +1,7 @@
 package repositorygen
 
 import (
-	"github.com/jrazmi/envoker/app/generators/sqlparser"
+	"github.com/jrazmi/envoker/app/generators/schema"
 )
 
 // Config holds configuration for repository generation
@@ -39,7 +39,7 @@ type TemplateData struct {
 	CreatedAtIsPointer bool // True if CreatedAt is *time.Time
 
 	// Columns and fields
-	Columns      []sqlparser.Column
+	Columns      []schema.Column
 	EntityFields []FieldInfo // Fields for Entity struct
 	CreateFields []FieldInfo // Fields for Create struct
 	UpdateFields []FieldInfo // Fields for Update struct

@@ -8,7 +8,7 @@ import (
 	"github.com/jrazmi/envoker/app/generators/bridgegen"
 	"github.com/jrazmi/envoker/app/generators/pgxstores"
 	"github.com/jrazmi/envoker/app/generators/repositorygen"
-	"github.com/jrazmi/envoker/app/generators/sqlparser"
+	"github.com/jrazmi/envoker/app/generators/schema"
 )
 
 // Config holds configuration for the orchestrator
@@ -31,21 +31,21 @@ type Result struct {
 	Warnings         []string
 }
 
-// GenerateAll orchestrates the generation of all layers from a ParseResult
-func GenerateAll(parseResult *sqlparser.ParseResult, config Config) (*Result, error) {
+// GenerateAll orchestrates the generation of all layers from a TableDefinition
+func GenerateAll(tableDef *schema.TableDefinition, config Config) (*Result, error) {
 	result := &Result{
 		StartTime: time.Now(),
 	}
 
 	// Analyze and enrich (if not already done)
 	fmt.Println("🧠 Analyzing schema and deriving metadata...")
-	if err := sqlparser.Analyze(parseResult); err != nil {
-		result.Errors = append(result.Errors, fmt.Errorf("analyze SQL: %w", err))
+	if err := schema.AnalyzeTableDefinition(tableDef); err != nil {
+		result.Errors = append(result.Errors, fmt.Errorf("analyze schema: %w", err))
 		return result, err
 	}
 
 	// Validate
-	if errs := sqlparser.ValidateSchema(parseResult.Schema); len(errs) > 0 {
+	if errs := schema.ValidateSchema(tableDef.Schema); len(errs) > 0 {
 		for _, e := range errs {
 			result.Errors = append(result.Errors, e)
 		}
@@ -53,8 +53,8 @@ func GenerateAll(parseResult *sqlparser.ParseResult, config Config) (*Result, er
 	}
 
 	fmt.Printf("✅ Schema validated: %s (PK: %s)\n",
-		parseResult.Schema.Name,
-		parseResult.Schema.PrimaryKey.ColumnName,
+		tableDef.Schema.Name,
+		tableDef.Schema.PrimaryKey.ColumnName,
 	)
 
 	// Determine which layers to generate
@@ -72,7 +72,7 @@ func GenerateAll(parseResult *sqlparser.ParseResult, config Config) (*Result, er
 			ForceOverwrite: config.ForceOverwrite,
 		}
 
-		repoResult, err := repositorygen.Generate(parseResult, repoConfig)
+		repoResult, err := repositorygen.Generate(tableDef, repoConfig)
 		if err != nil {
 			result.Errors = append(result.Errors, fmt.Errorf("generate repository: %w", err))
 			result.RepositoryResult = repoResult
@@ -87,13 +87,13 @@ func GenerateAll(parseResult *sqlparser.ParseResult, config Config) (*Result, er
 	// Generate Store Layer
 	if contains(layers, "store") {
 		fmt.Println("\n🗄️  Generating Store Layer...")
-		storeConfig := pgxstores.SQLConfig{
+		storeConfig := pgxstores.GenerateConfig{
 			ModulePath:     config.ModulePath,
 			OutputDir:      config.OutputDir,
 			ForceOverwrite: config.ForceOverwrite,
 		}
 
-		storeFile, err := pgxstores.GenerateFromSQL(parseResult, storeConfig)
+		storeFile, err := pgxstores.GenerateFromSchema(tableDef, storeConfig)
 		if err != nil {
 			result.Errors = append(result.Errors, fmt.Errorf("generate store: %w", err))
 			return result, err
@@ -112,7 +112,7 @@ func GenerateAll(parseResult *sqlparser.ParseResult, config Config) (*Result, er
 			ForceOverwrite: config.ForceOverwrite,
 		}
 
-		bridgeResult, err := bridgegen.Generate(parseResult, bridgeConfig)
+		bridgeResult, err := bridgegen.Generate(tableDef, bridgeConfig)
 		if err != nil {
 			result.Errors = append(result.Errors, fmt.Errorf("generate bridge: %w", err))
 			result.BridgeResult = bridgeResult
