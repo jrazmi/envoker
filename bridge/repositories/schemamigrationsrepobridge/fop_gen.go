@@ -5,7 +5,6 @@ package schemamigrationsrepobridge
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/jrazmi/envoker/core/repositories/schemamigrationsrepo"
@@ -19,8 +18,8 @@ type queryParams struct {
 	Order  string
 	// Filter fields
 	SearchTerm string
-	Checksum string
-	AppliedAt string
+	Checksum   string
+	AppliedAt  string
 }
 
 // pathParams holds path parameter values
@@ -36,8 +35,8 @@ func parseQueryParams(r *http.Request) queryParams {
 		Cursor:     q.Get("cursor"),
 		Order:      q.Get("order"),
 		SearchTerm: q.Get("search_term"),
-		Checksum: q.Get("checksum"),
-		AppliedAt: q.Get("applied_at"),
+		Checksum:   q.Get("checksum"),
+		AppliedAt:  q.Get("applied_at"),
 	}
 }
 
@@ -75,10 +74,10 @@ func parsePath(r *http.Request) (pathParams, error) {
 
 // orderByFields maps URL-friendly field names to repository OrderBy constants
 var orderByFields = map[string]string{
-	"version": schemamigrationsrepo.OrderByPK,
-	"created_at":      schemamigrationsrepo.OrderByCreatedAt,
-	"updated_at":      schemamigrationsrepo.OrderByUpdatedAt,
-	"checksum": schemamigrationsrepo.OrderByChecksum,
+	"version":    schemamigrationsrepo.OrderByPK,
+	"created_at": schemamigrationsrepo.OrderByCreatedAt,
+	"updated_at": schemamigrationsrepo.OrderByUpdatedAt,
+	"checksum":   schemamigrationsrepo.OrderByChecksum,
 	"applied_at": schemamigrationsrepo.OrderByAppliedAt,
 }
 

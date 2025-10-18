@@ -14,7 +14,7 @@ const (
 	OrderByPK        = "version"
 	OrderByCreatedAt = "created_at"
 	OrderByUpdatedAt = "updated_at"
-	OrderByChecksum = "checksum"
+	OrderByChecksum  = "checksum"
 	OrderByAppliedAt = "applied_at"
 )
 
@@ -40,11 +40,11 @@ func EncodeSchemaMigrationCursor(createdAt time.Time, version string) (string, e
 
 // SchemaMigrationFilter holds the available fields a query can be filtered on
 type SchemaMigrationFilter struct {
-	SearchTerm *string `json:"search_term,omitempty"` // Search across text fields
-	Checksum *string `json:"checksum,omitempty"` // Filter by checksum
-	AppliedAt *time.Time `json:"applied_at,omitempty"` // Filter by applied_at
+	SearchTerm      *string    `json:"search_term,omitempty"`       // Search across text fields
+	Checksum        *string    `json:"checksum,omitempty"`          // Filter by checksum
+	AppliedAt       *time.Time `json:"applied_at,omitempty"`        // Filter by applied_at
 	CreatedAtBefore *time.Time `json:"created_at_before,omitempty"` // Filter by created_at < value
-	CreatedAtAfter  *time.Time `json:"created_at_after,omitempty"` // Filter by created_at > value
+	CreatedAtAfter  *time.Time `json:"created_at_after,omitempty"`  // Filter by created_at > value
 	UpdatedAtBefore *time.Time `json:"updated_at_before,omitempty"` // Filter by updated_at < value
-	UpdatedAtAfter  *time.Time `json:"updated_at_after,omitempty"` // Filter by updated_at > value
+	UpdatedAtAfter  *time.Time `json:"updated_at_after,omitempty"`  // Filter by updated_at > value
 }

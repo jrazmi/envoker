@@ -9,8 +9,8 @@ import (
 
 // SchemaMigration represents a schemaMigration entity
 type SchemaMigration struct {
-	Version string `json:"version" db:"version" validate:"required,max=255"`
-	Checksum string `json:"checksum" db:"checksum" validate:"required,max=64"`
+	Version   string    `json:"version" db:"version" validate:"required,max=255"`
+	Checksum  string    `json:"checksum" db:"checksum" validate:"required,max=64"`
 	AppliedAt time.Time `json:"applied_at" db:"applied_at" validate:"required"`
 	CreatedAt time.Time `json:"created_at" db:"created_at" validate:"required"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at" validate:"required"`
@@ -18,14 +18,14 @@ type SchemaMigration struct {
 
 // CreateSchemaMigration contains the data needed to create a new schemaMigration
 type CreateSchemaMigration struct {
-	Version string `json:"version" db:"version" validate:"required,max=255"`
-	Checksum string `json:"checksum" db:"checksum" validate:"required,max=64"`
+	Version   string    `json:"version" db:"version" validate:"required,max=255"`
+	Checksum  string    `json:"checksum" db:"checksum" validate:"required,max=64"`
 	AppliedAt time.Time `json:"applied_at" db:"applied_at" validate:"required"`
 }
 
 // UpdateSchemaMigration contains the data for updating an existing schemaMigration
 type UpdateSchemaMigration struct {
-	Checksum *string `json:"checksum" db:"checksum"`
+	Checksum  *string    `json:"checksum" db:"checksum"`
 	AppliedAt *time.Time `json:"applied_at" db:"applied_at"`
 	UpdatedAt *time.Time `json:"updated_at" db:"updated_at"` // Optional override for updated_at
 }

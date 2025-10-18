@@ -9,8 +9,8 @@ import (
 // MarshalToBridge converts a repository SchemaMigration to a bridge SchemaMigration
 func MarshalToBridge(repo schemamigrationsrepo.SchemaMigration) SchemaMigration {
 	return SchemaMigration{
-		Version: repo.Version,
-		Checksum: repo.Checksum,
+		Version:   repo.Version,
+		Checksum:  repo.Checksum,
 		AppliedAt: repo.AppliedAt,
 		CreatedAt: repo.CreatedAt,
 		UpdatedAt: repo.UpdatedAt,
@@ -29,8 +29,8 @@ func MarshalListToBridge(repos []schemamigrationsrepo.SchemaMigration) []SchemaM
 // MarshalCreateToRepository converts a bridge Create input to repository Create input
 func MarshalCreateToRepository(input CreateSchemaMigrationInput) schemamigrationsrepo.CreateSchemaMigration {
 	return schemamigrationsrepo.CreateSchemaMigration{
-		Version: input.Version,
-		Checksum: input.Checksum,
+		Version:   input.Version,
+		Checksum:  input.Checksum,
 		AppliedAt: input.AppliedAt,
 	}
 }
@@ -38,7 +38,7 @@ func MarshalCreateToRepository(input CreateSchemaMigrationInput) schemamigration
 // MarshalUpdateToRepository converts a bridge Update input to repository Update input
 func MarshalUpdateToRepository(input UpdateSchemaMigrationInput) schemamigrationsrepo.UpdateSchemaMigration {
 	return schemamigrationsrepo.UpdateSchemaMigration{
-		Checksum: input.Checksum,
+		Checksum:  input.Checksum,
 		AppliedAt: input.AppliedAt,
 	}
 }

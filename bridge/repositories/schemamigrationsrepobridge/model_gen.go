@@ -4,12 +4,13 @@ package schemamigrationsrepobridge
 
 import (
 	"encoding/json"
+	"time"
 )
 
 // SchemaMigration represents the bridge model for schemaMigration
 type SchemaMigration struct {
-	Version string `json:"version"`
-	Checksum string `json:"checksum"`
+	Version   string    `json:"version"`
+	Checksum  string    `json:"checksum"`
 	AppliedAt time.Time `json:"applied_at"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -23,8 +24,8 @@ func (t SchemaMigration) Encode() ([]byte, string, error) {
 
 // CreateSchemaMigrationInput represents the input for creating a new schemaMigration
 type CreateSchemaMigrationInput struct {
-	Version string `json:"version"`
-	Checksum string `json:"checksum"`
+	Version   string    `json:"version"`
+	Checksum  string    `json:"checksum"`
 	AppliedAt time.Time `json:"applied_at,omitempty"`
 }
 
@@ -35,7 +36,7 @@ func (c *CreateSchemaMigrationInput) Decode(data []byte) error {
 
 // UpdateSchemaMigrationInput represents the input for updating a schemaMigration
 type UpdateSchemaMigrationInput struct {
-	Checksum *string `json:"checksum,omitempty"`
+	Checksum  *string    `json:"checksum,omitempty"`
 	AppliedAt *time.Time `json:"applied_at,omitempty"`
 }
 

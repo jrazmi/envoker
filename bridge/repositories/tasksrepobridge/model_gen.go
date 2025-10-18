@@ -9,18 +9,18 @@ import (
 
 // Task represents the bridge model for task
 type Task struct {
-	TaskId string `json:"task_id"`
-	ProcessingStatus string `json:"processing_status"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	TaskType string `json:"task_type"`
-	Metadata *json.RawMessage `json:"metadata,omitempty"`
-	Priority *int `json:"priority,omitempty"`
-	MaxRetries *int `json:"max_retries,omitempty"`
-	RetryCount *int `json:"retry_count,omitempty"`
-	ErrorMessage *string `json:"error_message,omitempty"`
-	ProcessingTimeMs *int `json:"processing_time_ms,omitempty"`
-	LastRunAt *time.Time `json:"last_run_at,omitempty"`
+	TaskId           string           `json:"task_id"`
+	ProcessingStatus string           `json:"processing_status"`
+	CreatedAt        time.Time        `json:"created_at"`
+	UpdatedAt        time.Time        `json:"updated_at"`
+	TaskType         string           `json:"task_type"`
+	Metadata         *json.RawMessage `json:"metadata,omitempty"`
+	Priority         *int             `json:"priority,omitempty"`
+	MaxRetries       *int             `json:"max_retries,omitempty"`
+	RetryCount       *int             `json:"retry_count,omitempty"`
+	ErrorMessage     *string          `json:"error_message,omitempty"`
+	ProcessingTimeMs *int             `json:"processing_time_ms,omitempty"`
+	LastRunAt        *time.Time       `json:"last_run_at,omitempty"`
 }
 
 // Encode implements the encoder interface
@@ -31,16 +31,16 @@ func (t Task) Encode() ([]byte, string, error) {
 
 // CreateTaskInput represents the input for creating a new task
 type CreateTaskInput struct {
-	TaskId string `json:"task_id"`
-	ProcessingStatus string `json:"processing_status,omitempty"`
-	TaskType string `json:"task_type"`
-	Metadata *json.RawMessage `json:"metadata,omitempty"`
-	Priority *int `json:"priority,omitempty"`
-	MaxRetries *int `json:"max_retries,omitempty"`
-	RetryCount *int `json:"retry_count,omitempty"`
-	ErrorMessage *string `json:"error_message,omitempty"`
-	ProcessingTimeMs *int `json:"processing_time_ms,omitempty"`
-	LastRunAt *time.Time `json:"last_run_at,omitempty"`
+	TaskId           string           `json:"task_id"`
+	ProcessingStatus string           `json:"processing_status,omitempty"`
+	TaskType         string           `json:"task_type"`
+	Metadata         *json.RawMessage `json:"metadata,omitempty"`
+	Priority         *int             `json:"priority,omitempty"`
+	MaxRetries       *int             `json:"max_retries,omitempty"`
+	RetryCount       *int             `json:"retry_count,omitempty"`
+	ErrorMessage     *string          `json:"error_message,omitempty"`
+	ProcessingTimeMs *int             `json:"processing_time_ms,omitempty"`
+	LastRunAt        *time.Time       `json:"last_run_at,omitempty"`
 }
 
 // Decode implements the decoder interface
@@ -50,15 +50,15 @@ func (c *CreateTaskInput) Decode(data []byte) error {
 
 // UpdateTaskInput represents the input for updating a task
 type UpdateTaskInput struct {
-	ProcessingStatus *string `json:"processing_status,omitempty"`
-	TaskType *string `json:"task_type,omitempty"`
-	Metadata *json.RawMessage `json:"metadata,omitempty"`
-	Priority *int `json:"priority,omitempty"`
-	MaxRetries *int `json:"max_retries,omitempty"`
-	RetryCount *int `json:"retry_count,omitempty"`
-	ErrorMessage *string `json:"error_message,omitempty"`
-	ProcessingTimeMs *int `json:"processing_time_ms,omitempty"`
-	LastRunAt *time.Time `json:"last_run_at,omitempty"`
+	ProcessingStatus *string          `json:"processing_status,omitempty"`
+	TaskType         *string          `json:"task_type,omitempty"`
+	Metadata         *json.RawMessage `json:"metadata,omitempty"`
+	Priority         *int             `json:"priority,omitempty"`
+	MaxRetries       *int             `json:"max_retries,omitempty"`
+	RetryCount       *int             `json:"retry_count,omitempty"`
+	ErrorMessage     *string          `json:"error_message,omitempty"`
+	ProcessingTimeMs *int             `json:"processing_time_ms,omitempty"`
+	LastRunAt        *time.Time       `json:"last_run_at,omitempty"`
 }
 
 // Decode implements the decoder interface

@@ -33,7 +33,7 @@ tidy:
 # Drop and recreate database schema
 db-reset-local:
 	@echo "🗑️  Dropping and recreating public schema..."
-	@docker exec $(NAME)-postgres psql -U db_user -d database -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+	@docker exec $(NAME)-postgres psql -U postgres -d $(NAME) -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 
 # Reflect database schema to JSON
 db-reflect:
@@ -78,10 +78,10 @@ generate-help:
 	@echo "  make db-reflect                    - Reflect database schema to JSON"
 	@echo "  make generate-all                  - Generate code for ALL tables from JSON"
 	@echo "  make generate-table TABLE=<name>   - Generate code for SINGLE table from JSON"
-	@echo "  make db-code-full-reset            - Full workflow: reset -> migrate -> reflect -> generate"
+	@echo "  make db-code-full-reset         - Full workflow: reset -> migrate -> reflect -> generate"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make db-code-full-reset            # Complete reset and regeneration"
+	@echo "  make db-code-full-reset        # Complete reset and regeneration of docker database and go files"
 	@echo "  make generate-table TABLE=tasks    # Regenerate single table"
 	@echo "  make generate-all                  # Regenerate all tables"
 	@echo "  make db-reflect                    # Just update JSON from current DB"

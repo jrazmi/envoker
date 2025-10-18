@@ -18,15 +18,15 @@ type queryParams struct {
 	Cursor string
 	Order  string
 	// Filter fields
-	SearchTerm string
+	SearchTerm       string
 	ProcessingStatus string
-	TaskType string
-	Priority string
-	MaxRetries string
-	RetryCount string
-	ErrorMessage string
+	TaskType         string
+	Priority         string
+	MaxRetries       string
+	RetryCount       string
+	ErrorMessage     string
 	ProcessingTimeMs string
-	LastRunAt string
+	LastRunAt        string
 }
 
 // pathParams holds path parameter values
@@ -38,18 +38,18 @@ type pathParams struct {
 func parseQueryParams(r *http.Request) queryParams {
 	q := r.URL.Query()
 	return queryParams{
-		Limit:      q.Get("limit"),
-		Cursor:     q.Get("cursor"),
-		Order:      q.Get("order"),
-		SearchTerm: q.Get("search_term"),
+		Limit:            q.Get("limit"),
+		Cursor:           q.Get("cursor"),
+		Order:            q.Get("order"),
+		SearchTerm:       q.Get("search_term"),
 		ProcessingStatus: q.Get("processing_status"),
-		TaskType: q.Get("task_type"),
-		Priority: q.Get("priority"),
-		MaxRetries: q.Get("max_retries"),
-		RetryCount: q.Get("retry_count"),
-		ErrorMessage: q.Get("error_message"),
+		TaskType:         q.Get("task_type"),
+		Priority:         q.Get("priority"),
+		MaxRetries:       q.Get("max_retries"),
+		RetryCount:       q.Get("retry_count"),
+		ErrorMessage:     q.Get("error_message"),
 		ProcessingTimeMs: q.Get("processing_time_ms"),
-		LastRunAt: q.Get("last_run_at"),
+		LastRunAt:        q.Get("last_run_at"),
 	}
 }
 
@@ -127,17 +127,17 @@ func parsePath(r *http.Request) (pathParams, error) {
 
 // orderByFields maps URL-friendly field names to repository OrderBy constants
 var orderByFields = map[string]string{
-	"task_id": tasksrepo.OrderByPK,
-	"created_at":      tasksrepo.OrderByCreatedAt,
-	"updated_at":      tasksrepo.OrderByUpdatedAt,
-	"processing_status": tasksrepo.OrderByProcessingStatus,
-	"task_type": tasksrepo.OrderByTaskType,
-	"priority": tasksrepo.OrderByPriority,
-	"max_retries": tasksrepo.OrderByMaxRetries,
-	"retry_count": tasksrepo.OrderByRetryCount,
-	"error_message": tasksrepo.OrderByErrorMessage,
+	"task_id":            tasksrepo.OrderByPK,
+	"created_at":         tasksrepo.OrderByCreatedAt,
+	"updated_at":         tasksrepo.OrderByUpdatedAt,
+	"processing_status":  tasksrepo.OrderByProcessingStatus,
+	"task_type":          tasksrepo.OrderByTaskType,
+	"priority":           tasksrepo.OrderByPriority,
+	"max_retries":        tasksrepo.OrderByMaxRetries,
+	"retry_count":        tasksrepo.OrderByRetryCount,
+	"error_message":      tasksrepo.OrderByErrorMessage,
 	"processing_time_ms": tasksrepo.OrderByProcessingTimeMs,
-	"last_run_at": tasksrepo.OrderByLastRunAt,
+	"last_run_at":        tasksrepo.OrderByLastRunAt,
 }
 
 // parseOrderBy converts order query param to fop.By with validation

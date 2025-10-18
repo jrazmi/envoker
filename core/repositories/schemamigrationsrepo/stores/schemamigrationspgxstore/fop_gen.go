@@ -6,10 +6,9 @@ package schemamigrationspgxstore
 import (
 	"bytes"
 	"strings"
-	"time"
 
-	"github.com/jrazmi/envoker/core/repositories/schemamigrationsrepo"
 	"github.com/jackc/pgx/v5"
+	"github.com/jrazmi/envoker/core/repositories/schemamigrationsrepo"
 )
 
 // orderByFields maps repository field names to database column names
@@ -17,7 +16,7 @@ var orderByFields = map[string]string{
 	schemamigrationsrepo.OrderByPK:        "version",
 	schemamigrationsrepo.OrderByCreatedAt: "created_at",
 	schemamigrationsrepo.OrderByUpdatedAt: "updated_at",
-	schemamigrationsrepo.OrderByChecksum: "checksum",
+	schemamigrationsrepo.OrderByChecksum:  "checksum",
 	schemamigrationsrepo.OrderByAppliedAt: "applied_at",
 }
 
@@ -64,7 +63,7 @@ func (s *Store) applyFilter(filter schemamigrationsrepo.SchemaMigrationFilter, d
 		searchConditions = append(searchConditions, "version ILIKE @search_term")
 		searchConditions = append(searchConditions, "checksum ILIKE @search_term")
 		if len(searchConditions) > 0 {
-			conditions = append(conditions, "(" + strings.Join(searchConditions, " OR ") + ")")
+			conditions = append(conditions, "("+strings.Join(searchConditions, " OR ")+")")
 			data["search_term"] = searchPattern
 		}
 	}

@@ -23,8 +23,8 @@ func (s *Store) Create(ctx context.Context, input schemamigrationsrepo.CreateSch
 	query := `INSERT INTO public.schema_migrations (version, checksum, applied_at) VALUES (@version, @checksum, @applied_at) RETURNING version, checksum, applied_at, created_at, updated_at`
 
 	args := pgx.NamedArgs{
-		"version": input.Version,
-		"checksum": input.Checksum,
+		"version":    input.Version,
+		"checksum":   input.Checksum,
 		"applied_at": input.AppliedAt,
 	}
 

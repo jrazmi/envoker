@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	"encoding/json"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jrazmi/envoker/core/repositories/tasksrepo"
@@ -24,16 +23,16 @@ func (s *Store) Create(ctx context.Context, input tasksrepo.CreateTask) (tasksre
 	query := `INSERT INTO public.tasks (task_id, processing_status, task_type, metadata, priority, max_retries, retry_count, error_message, processing_time_ms, last_run_at) VALUES (@task_id, @processing_status, @task_type, @metadata, @priority, @max_retries, @retry_count, @error_message, @processing_time_ms, @last_run_at) RETURNING task_id, processing_status, created_at, updated_at, task_type, metadata, priority, max_retries, retry_count, error_message, processing_time_ms, last_run_at`
 
 	args := pgx.NamedArgs{
-		"task_id": input.TaskId,
-		"processing_status": input.ProcessingStatus,
-		"task_type": input.TaskType,
-		"metadata": input.Metadata,
-		"priority": input.Priority,
-		"max_retries": input.MaxRetries,
-		"retry_count": input.RetryCount,
-		"error_message": input.ErrorMessage,
+		"task_id":            input.TaskId,
+		"processing_status":  input.ProcessingStatus,
+		"task_type":          input.TaskType,
+		"metadata":           input.Metadata,
+		"priority":           input.Priority,
+		"max_retries":        input.MaxRetries,
+		"retry_count":        input.RetryCount,
+		"error_message":      input.ErrorMessage,
 		"processing_time_ms": input.ProcessingTimeMs,
-		"last_run_at": input.LastRunAt,
+		"last_run_at":        input.LastRunAt,
 	}
 
 	rows, err := s.pool.Query(ctx, query, args)

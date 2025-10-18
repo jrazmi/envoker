@@ -10,7 +10,6 @@ import (
 
 	"github.com/jrazmi/envoker/bridge/scaffolding/errs"
 	"github.com/jrazmi/envoker/bridge/scaffolding/fopbridge"
-	"github.com/jrazmi/envoker/core/repositories/schemamigrationsrepo"
 	"github.com/jrazmi/envoker/core/scaffolding/fop"
 	"github.com/jrazmi/envoker/infrastructure/web"
 )

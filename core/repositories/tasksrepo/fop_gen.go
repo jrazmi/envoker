@@ -11,18 +11,18 @@ import (
 
 // OrderBy constants for sorting
 const (
-	OrderByPK        = "task_id"
-	OrderByCreatedAt = "created_at"
-	OrderByUpdatedAt = "updated_at"
+	OrderByPK               = "task_id"
+	OrderByCreatedAt        = "created_at"
+	OrderByUpdatedAt        = "updated_at"
 	OrderByProcessingStatus = "processing_status"
-	OrderByTaskType = "task_type"
-	OrderByMetadata = "metadata"
-	OrderByPriority = "priority"
-	OrderByMaxRetries = "max_retries"
-	OrderByRetryCount = "retry_count"
-	OrderByErrorMessage = "error_message"
+	OrderByTaskType         = "task_type"
+	OrderByMetadata         = "metadata"
+	OrderByPriority         = "priority"
+	OrderByMaxRetries       = "max_retries"
+	OrderByRetryCount       = "retry_count"
+	OrderByErrorMessage     = "error_message"
 	OrderByProcessingTimeMs = "processing_time_ms"
-	OrderByLastRunAt = "last_run_at"
+	OrderByLastRunAt        = "last_run_at"
 )
 
 // DefaultOrderBy specifies the default sort order
@@ -47,17 +47,17 @@ func EncodeTaskCursor(createdAt time.Time, taskId string) (string, error) {
 
 // TaskFilter holds the available fields a query can be filtered on
 type TaskFilter struct {
-	SearchTerm *string `json:"search_term,omitempty"` // Search across text fields
-	ProcessingStatus *string `json:"processing_status,omitempty"` // Filter by processing_status
-	CreatedAtBefore *time.Time `json:"created_at_before,omitempty"` // Filter by created_at < value
-	CreatedAtAfter  *time.Time `json:"created_at_after,omitempty"` // Filter by created_at > value
-	UpdatedAtBefore *time.Time `json:"updated_at_before,omitempty"` // Filter by updated_at < value
-	UpdatedAtAfter  *time.Time `json:"updated_at_after,omitempty"` // Filter by updated_at > value
-	TaskType *string `json:"task_type,omitempty"` // Filter by task_type
-	Priority *int `json:"priority,omitempty"` // Filter by priority
-	MaxRetries *int `json:"max_retries,omitempty"` // Filter by max_retries
-	RetryCount *int `json:"retry_count,omitempty"` // Filter by retry_count
-	ErrorMessage *string `json:"error_message,omitempty"` // Filter by error_message
-	ProcessingTimeMs *int `json:"processing_time_ms,omitempty"` // Filter by processing_time_ms
-	LastRunAt *time.Time `json:"last_run_at,omitempty"` // Filter by last_run_at
+	SearchTerm       *string    `json:"search_term,omitempty"`        // Search across text fields
+	ProcessingStatus *string    `json:"processing_status,omitempty"`  // Filter by processing_status
+	CreatedAtBefore  *time.Time `json:"created_at_before,omitempty"`  // Filter by created_at < value
+	CreatedAtAfter   *time.Time `json:"created_at_after,omitempty"`   // Filter by created_at > value
+	UpdatedAtBefore  *time.Time `json:"updated_at_before,omitempty"`  // Filter by updated_at < value
+	UpdatedAtAfter   *time.Time `json:"updated_at_after,omitempty"`   // Filter by updated_at > value
+	TaskType         *string    `json:"task_type,omitempty"`          // Filter by task_type
+	Priority         *int       `json:"priority,omitempty"`           // Filter by priority
+	MaxRetries       *int       `json:"max_retries,omitempty"`        // Filter by max_retries
+	RetryCount       *int       `json:"retry_count,omitempty"`        // Filter by retry_count
+	ErrorMessage     *string    `json:"error_message,omitempty"`      // Filter by error_message
+	ProcessingTimeMs *int       `json:"processing_time_ms,omitempty"` // Filter by processing_time_ms
+	LastRunAt        *time.Time `json:"last_run_at,omitempty"`        // Filter by last_run_at
 }

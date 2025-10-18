@@ -1,3 +1,5 @@
+// cursor.go - Generic cursor implementation
+
 package postgresdb
 
 import (

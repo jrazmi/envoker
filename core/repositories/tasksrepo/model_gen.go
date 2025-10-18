@@ -4,50 +4,50 @@
 package tasksrepo
 
 import (
-	"time"
 	"encoding/json"
+	"time"
 )
 
 // Task represents a task entity
 type Task struct {
-	TaskId string `json:"task_id" db:"task_id" validate:"required"`
-	ProcessingStatus string `json:"processing_status" db:"processing_status" validate:"required,max=50"`
-	CreatedAt time.Time `json:"created_at" db:"created_at" validate:"required"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at" validate:"required"`
-	TaskType string `json:"task_type" db:"task_type" validate:"required,max=100"`
-	Metadata *json.RawMessage `json:"metadata" db:"metadata"`
-	Priority *int `json:"priority" db:"priority"`
-	MaxRetries *int `json:"max_retries" db:"max_retries"`
-	RetryCount *int `json:"retry_count" db:"retry_count"`
-	ErrorMessage *string `json:"error_message" db:"error_message"`
-	ProcessingTimeMs *int `json:"processing_time_ms" db:"processing_time_ms"`
-	LastRunAt *time.Time `json:"last_run_at" db:"last_run_at"`
+	TaskId           string           `json:"task_id" db:"task_id" validate:"required"`
+	ProcessingStatus string           `json:"processing_status" db:"processing_status" validate:"required,max=50"`
+	CreatedAt        time.Time        `json:"created_at" db:"created_at" validate:"required"`
+	UpdatedAt        time.Time        `json:"updated_at" db:"updated_at" validate:"required"`
+	TaskType         string           `json:"task_type" db:"task_type" validate:"required,max=100"`
+	Metadata         *json.RawMessage `json:"metadata" db:"metadata"`
+	Priority         *int             `json:"priority" db:"priority"`
+	MaxRetries       *int             `json:"max_retries" db:"max_retries"`
+	RetryCount       *int             `json:"retry_count" db:"retry_count"`
+	ErrorMessage     *string          `json:"error_message" db:"error_message"`
+	ProcessingTimeMs *int             `json:"processing_time_ms" db:"processing_time_ms"`
+	LastRunAt        *time.Time       `json:"last_run_at" db:"last_run_at"`
 }
 
 // CreateTask contains the data needed to create a new task
 type CreateTask struct {
-	TaskId string `json:"task_id" db:"task_id" validate:"required"`
-	ProcessingStatus string `json:"processing_status" db:"processing_status" validate:"required,max=50"`
-	TaskType string `json:"task_type" db:"task_type" validate:"required,max=100"`
-	Metadata *json.RawMessage `json:"metadata" db:"metadata"`
-	Priority *int `json:"priority" db:"priority"`
-	MaxRetries *int `json:"max_retries" db:"max_retries"`
-	RetryCount *int `json:"retry_count" db:"retry_count"`
-	ErrorMessage *string `json:"error_message" db:"error_message"`
-	ProcessingTimeMs *int `json:"processing_time_ms" db:"processing_time_ms"`
-	LastRunAt *time.Time `json:"last_run_at" db:"last_run_at"`
+	TaskId           string           `json:"task_id" db:"task_id" validate:"required"`
+	ProcessingStatus string           `json:"processing_status" db:"processing_status" validate:"required,max=50"`
+	TaskType         string           `json:"task_type" db:"task_type" validate:"required,max=100"`
+	Metadata         *json.RawMessage `json:"metadata" db:"metadata"`
+	Priority         *int             `json:"priority" db:"priority"`
+	MaxRetries       *int             `json:"max_retries" db:"max_retries"`
+	RetryCount       *int             `json:"retry_count" db:"retry_count"`
+	ErrorMessage     *string          `json:"error_message" db:"error_message"`
+	ProcessingTimeMs *int             `json:"processing_time_ms" db:"processing_time_ms"`
+	LastRunAt        *time.Time       `json:"last_run_at" db:"last_run_at"`
 }
 
 // UpdateTask contains the data for updating an existing task
 type UpdateTask struct {
-	ProcessingStatus *string `json:"processing_status" db:"processing_status"`
-	TaskType *string `json:"task_type" db:"task_type"`
-	Metadata *json.RawMessage `json:"metadata" db:"metadata"`
-	Priority *int `json:"priority" db:"priority"`
-	MaxRetries *int `json:"max_retries" db:"max_retries"`
-	RetryCount *int `json:"retry_count" db:"retry_count"`
-	ErrorMessage *string `json:"error_message" db:"error_message"`
-	ProcessingTimeMs *int `json:"processing_time_ms" db:"processing_time_ms"`
-	LastRunAt *time.Time `json:"last_run_at" db:"last_run_at"`
-	UpdatedAt *time.Time `json:"updated_at" db:"updated_at"` // Optional override for updated_at
+	ProcessingStatus *string          `json:"processing_status" db:"processing_status"`
+	TaskType         *string          `json:"task_type" db:"task_type"`
+	Metadata         *json.RawMessage `json:"metadata" db:"metadata"`
+	Priority         *int             `json:"priority" db:"priority"`
+	MaxRetries       *int             `json:"max_retries" db:"max_retries"`
+	RetryCount       *int             `json:"retry_count" db:"retry_count"`
+	ErrorMessage     *string          `json:"error_message" db:"error_message"`
+	ProcessingTimeMs *int             `json:"processing_time_ms" db:"processing_time_ms"`
+	LastRunAt        *time.Time       `json:"last_run_at" db:"last_run_at"`
+	UpdatedAt        *time.Time       `json:"updated_at" db:"updated_at"` // Optional override for updated_at
 }

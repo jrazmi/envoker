@@ -9,18 +9,18 @@ import (
 // MarshalToBridge converts a repository Task to a bridge Task
 func MarshalToBridge(repo tasksrepo.Task) Task {
 	return Task{
-		TaskId: repo.TaskId,
+		TaskId:           repo.TaskId,
 		ProcessingStatus: repo.ProcessingStatus,
-		CreatedAt: repo.CreatedAt,
-		UpdatedAt: repo.UpdatedAt,
-		TaskType: repo.TaskType,
-		Metadata: repo.Metadata,
-		Priority: repo.Priority,
-		MaxRetries: repo.MaxRetries,
-		RetryCount: repo.RetryCount,
-		ErrorMessage: repo.ErrorMessage,
+		CreatedAt:        repo.CreatedAt,
+		UpdatedAt:        repo.UpdatedAt,
+		TaskType:         repo.TaskType,
+		Metadata:         repo.Metadata,
+		Priority:         repo.Priority,
+		MaxRetries:       repo.MaxRetries,
+		RetryCount:       repo.RetryCount,
+		ErrorMessage:     repo.ErrorMessage,
 		ProcessingTimeMs: repo.ProcessingTimeMs,
-		LastRunAt: repo.LastRunAt,
+		LastRunAt:        repo.LastRunAt,
 	}
 }
 
@@ -36,16 +36,16 @@ func MarshalListToBridge(repos []tasksrepo.Task) []Task {
 // MarshalCreateToRepository converts a bridge Create input to repository Create input
 func MarshalCreateToRepository(input CreateTaskInput) tasksrepo.CreateTask {
 	return tasksrepo.CreateTask{
-		TaskId: input.TaskId,
+		TaskId:           input.TaskId,
 		ProcessingStatus: input.ProcessingStatus,
-		TaskType: input.TaskType,
-		Metadata: input.Metadata,
-		Priority: input.Priority,
-		MaxRetries: input.MaxRetries,
-		RetryCount: input.RetryCount,
-		ErrorMessage: input.ErrorMessage,
+		TaskType:         input.TaskType,
+		Metadata:         input.Metadata,
+		Priority:         input.Priority,
+		MaxRetries:       input.MaxRetries,
+		RetryCount:       input.RetryCount,
+		ErrorMessage:     input.ErrorMessage,
 		ProcessingTimeMs: input.ProcessingTimeMs,
-		LastRunAt: input.LastRunAt,
+		LastRunAt:        input.LastRunAt,
 	}
 }
 
@@ -53,13 +53,13 @@ func MarshalCreateToRepository(input CreateTaskInput) tasksrepo.CreateTask {
 func MarshalUpdateToRepository(input UpdateTaskInput) tasksrepo.UpdateTask {
 	return tasksrepo.UpdateTask{
 		ProcessingStatus: input.ProcessingStatus,
-		TaskType: input.TaskType,
-		Metadata: input.Metadata,
-		Priority: input.Priority,
-		MaxRetries: input.MaxRetries,
-		RetryCount: input.RetryCount,
-		ErrorMessage: input.ErrorMessage,
+		TaskType:         input.TaskType,
+		Metadata:         input.Metadata,
+		Priority:         input.Priority,
+		MaxRetries:       input.MaxRetries,
+		RetryCount:       input.RetryCount,
+		ErrorMessage:     input.ErrorMessage,
 		ProcessingTimeMs: input.ProcessingTimeMs,
-		LastRunAt: input.LastRunAt,
+		LastRunAt:        input.LastRunAt,
 	}
 }

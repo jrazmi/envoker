@@ -6,26 +6,25 @@ package taskspgxstore
 import (
 	"bytes"
 	"strings"
-	"time"
 
-	"github.com/jrazmi/envoker/core/repositories/tasksrepo"
 	"github.com/jackc/pgx/v5"
+	"github.com/jrazmi/envoker/core/repositories/tasksrepo"
 )
 
 // orderByFields maps repository field names to database column names
 var orderByFields = map[string]string{
-	tasksrepo.OrderByPK:        "task_id",
-	tasksrepo.OrderByCreatedAt: "created_at",
-	tasksrepo.OrderByUpdatedAt: "updated_at",
+	tasksrepo.OrderByPK:               "task_id",
+	tasksrepo.OrderByCreatedAt:        "created_at",
+	tasksrepo.OrderByUpdatedAt:        "updated_at",
 	tasksrepo.OrderByProcessingStatus: "processing_status",
-	tasksrepo.OrderByTaskType: "task_type",
-	tasksrepo.OrderByMetadata: "metadata",
-	tasksrepo.OrderByPriority: "priority",
-	tasksrepo.OrderByMaxRetries: "max_retries",
-	tasksrepo.OrderByRetryCount: "retry_count",
-	tasksrepo.OrderByErrorMessage: "error_message",
+	tasksrepo.OrderByTaskType:         "task_type",
+	tasksrepo.OrderByMetadata:         "metadata",
+	tasksrepo.OrderByPriority:         "priority",
+	tasksrepo.OrderByMaxRetries:       "max_retries",
+	tasksrepo.OrderByRetryCount:       "retry_count",
+	tasksrepo.OrderByErrorMessage:     "error_message",
 	tasksrepo.OrderByProcessingTimeMs: "processing_time_ms",
-	tasksrepo.OrderByLastRunAt: "last_run_at",
+	tasksrepo.OrderByLastRunAt:        "last_run_at",
 }
 
 // applyFilter applies query filters to the SQL query
@@ -103,7 +102,7 @@ func (s *Store) applyFilter(filter tasksrepo.TaskFilter, data pgx.NamedArgs, buf
 		searchConditions = append(searchConditions, "task_type ILIKE @search_term")
 		searchConditions = append(searchConditions, "error_message ILIKE @search_term")
 		if len(searchConditions) > 0 {
-			conditions = append(conditions, "(" + strings.Join(searchConditions, " OR ") + ")")
+			conditions = append(conditions, "("+strings.Join(searchConditions, " OR ")+")")
 			data["search_term"] = searchPattern
 		}
 	}
