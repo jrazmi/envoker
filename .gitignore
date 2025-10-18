@@ -32,3 +32,4 @@ tmp
 # secrets and env
 secrets.txt
 *.env
+.env
