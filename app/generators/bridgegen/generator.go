@@ -24,20 +24,16 @@ func Generate(tableDef *schema.TableDefinition, config Config) (*GenerateResult,
 
 	// Determine output paths
 	bridgeDir := filepath.Join(config.OutputDir, tableDef.Naming.BridgePath)
-	bridgeInitFile := filepath.Join(bridgeDir, "bridge.go")
-	httpRoutesFile := filepath.Join(bridgeDir, "http.go") // User-editable route registration (never overwrite)
-	httpFile := filepath.Join(bridgeDir, "http_gen.go")   // Generated HTTP handlers
-	modelFile := filepath.Join(bridgeDir, "model_gen.go")
-	marshalFile := filepath.Join(bridgeDir, "marshal_gen.go")
-	fopFile := filepath.Join(bridgeDir, "fop_gen.go")
+	generatedFile := filepath.Join(bridgeDir, "generated.go") // ALL generated code
+	modelFile := filepath.Join(bridgeDir, "model.go")         // Custom type aliases
+	bridgeInitFile := filepath.Join(bridgeDir, "bridge.go")   // Custom bridge struct
+	httpRoutesFile := filepath.Join(bridgeDir, "http.go")     // Custom route registration
 
-	// Check for existing files
+	// Check for existing generated file
 	if !config.ForceOverwrite {
-		for _, file := range []string{httpFile, modelFile, marshalFile, fopFile} {
-			if fileExists(file) {
-				result.Warnings = append(result.Warnings, fmt.Sprintf("File exists: %s (use -force to overwrite)", file))
-				return result, fmt.Errorf("file already exists: %s", file)
-			}
+		if fileExists(generatedFile) {
+			result.Warnings = append(result.Warnings, fmt.Sprintf("File exists: %s (use -force to overwrite)", generatedFile))
+			return result, fmt.Errorf("file already exists: %s", generatedFile)
 		}
 	}
 
@@ -47,7 +43,24 @@ func Generate(tableDef *schema.TableDefinition, config Config) (*GenerateResult,
 		return result, fmt.Errorf("create directory: %w", err)
 	}
 
-	// Generate bridge.go ONLY if it doesn't exist (never overwrite)
+	// Generate generated.go (ALWAYS regenerate - contains ALL generated code)
+	if err := generateFile(generatedFile, GeneratedTemplate, templateData); err != nil {
+		result.Errors = append(result.Errors, err)
+		return result, fmt.Errorf("generate generated file: %w", err)
+	}
+	result.ModelFile = generatedFile
+
+	// Generate model.go ONLY if it doesn't exist (custom file with type aliases)
+	if !fileExists(modelFile) {
+		if err := generateFile(modelFile, ModelCustomTemplate, templateData); err != nil {
+			result.Errors = append(result.Errors, err)
+			return result, fmt.Errorf("generate model file: %w", err)
+		}
+	} else {
+		result.Warnings = append(result.Warnings, fmt.Sprintf("Skipped: %s (already exists, will not overwrite)", modelFile))
+	}
+
+	// Generate bridge.go ONLY if it doesn't exist (custom file with Bridge struct)
 	if !fileExists(bridgeInitFile) {
 		if err := generateFile(bridgeInitFile, BridgeInitTemplate, templateData); err != nil {
 			result.Errors = append(result.Errors, err)
@@ -59,7 +72,7 @@ func Generate(tableDef *schema.TableDefinition, config Config) (*GenerateResult,
 		result.BridgeFile = bridgeInitFile
 	}
 
-	// Generate http.go ONLY if it doesn't exist (never overwrite, even with -force)
+	// Generate http.go ONLY if it doesn't exist (custom file with route registration)
 	if !fileExists(httpRoutesFile) {
 		if err := generateFile(httpRoutesFile, HTTPRoutesTemplate, templateData); err != nil {
 			result.Errors = append(result.Errors, err)
@@ -70,31 +83,6 @@ func Generate(tableDef *schema.TableDefinition, config Config) (*GenerateResult,
 		result.Warnings = append(result.Warnings, fmt.Sprintf("Skipped: %s (already exists, will not overwrite)", httpRoutesFile))
 		result.HTTPRoutesFile = httpRoutesFile
 	}
-
-	// Generate http_gen.go (can be overwritten with -force)
-	if err := generateFile(httpFile, HTTPTemplate, templateData); err != nil {
-		result.Errors = append(result.Errors, err)
-		return result, fmt.Errorf("generate http file: %w", err)
-	}
-	result.HTTPFile = httpFile
-
-	if err := generateFile(modelFile, ModelTemplate, templateData); err != nil {
-		result.Errors = append(result.Errors, err)
-		return result, fmt.Errorf("generate model file: %w", err)
-	}
-	result.ModelFile = modelFile
-
-	if err := generateFile(marshalFile, MarshalTemplate, templateData); err != nil {
-		result.Errors = append(result.Errors, err)
-		return result, fmt.Errorf("generate marshal file: %w", err)
-	}
-	result.MarshalFile = marshalFile
-
-	if err := generateFile(fopFile, FOPTemplate, templateData); err != nil {
-		result.Errors = append(result.Errors, err)
-		return result, fmt.Errorf("generate fop file: %w", err)
-	}
-	result.FOPFile = fopFile
 
 	return result, nil
 }

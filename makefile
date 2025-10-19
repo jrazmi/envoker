@@ -10,19 +10,6 @@ APP=app
 APP_IMAGE := $(NAME)/$(APP):$(VERSION)
 APP_IMAGE_LATEST := $(NAME)/$(APP):latest
 
-# ---------------- BUILD
-build: build-envoker
-
-build-envoker:
-	docker build \
-    -f workshop/docker/dockerfile.envoker\
-    -t $(APP_IMAGE) \
-    -t $(APP_IMAGE_LATEST) \
-    --build-arg BUILD_REF=$(VERSION) \
-    --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
-    .
-
-
 ########################################
 ## MANAGE
 ######################
@@ -56,6 +43,28 @@ generate-table:
 	@echo "🚀 Generating code for table $(TABLE)..."
 	@go run app/generators/main.go generate -json=schema/reflector/output/public.json -table=$(TABLE) -force
 
+# Common workflow: migrate -> reflect -> generate single table
+# Usage: make regen TABLE=api_keys
+regen:
+	@if [ -z "$(TABLE)" ]; then \
+		echo "❌ Error: TABLE parameter is required"; \
+		echo "Usage: make regen TABLE=api_keys"; \
+		exit 1; \
+	fi
+	@echo "🔄 Running migrate -> reflect -> generate for table $(TABLE)..."
+	@$(MAKE) migrate
+	@$(MAKE) db-reflect
+	@$(MAKE) generate-table TABLE=$(TABLE)
+	@echo "✅ Regeneration complete!"
+
+# Common workflow: migrate -> reflect -> generate all tables
+regen-all:
+	@echo "🔄 Running migrate -> reflect -> generate all..."
+	@$(MAKE) migrate
+	@$(MAKE) db-reflect
+	@$(MAKE) generate-all
+	@echo "✅ Full regeneration complete!"
+
 # Full workflow: reset DB -> migrate -> reflect -> generate all
 db-code-full-reset:
 	@echo "🔄 Running full database reset and code generation..."
@@ -73,45 +82,58 @@ generate-help:
 	@echo "Generator Makefile Targets:"
 	@echo ""
 	@echo "📖 Code Generation Workflow (JSON-based from reflected schema):"
-	@echo "  make db-reset-local                - Drop and recreate database schema"
+	@echo ""
+	@echo "🚀 Quick Commands (most commonly used):"
+	@echo "  make regen TABLE=<name>            - Migrate -> Reflect -> Generate single table"
+	@echo "  make regen-all                     - Migrate -> Reflect -> Generate all tables"
+	@echo "  make db-code-full-reset            - Full reset: drop DB -> migrate -> reflect -> generate all"
+	@echo ""
+	@echo "🔧 Individual Steps:"
 	@echo "  make migrate                       - Run database migrations"
 	@echo "  make db-reflect                    - Reflect database schema to JSON"
 	@echo "  make generate-all                  - Generate code for ALL tables from JSON"
 	@echo "  make generate-table TABLE=<name>   - Generate code for SINGLE table from JSON"
-	@echo "  make db-code-full-reset         - Full workflow: reset -> migrate -> reflect -> generate"
+	@echo "  make db-reset-local                - Drop and recreate database schema"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make db-code-full-reset        # Complete reset and regeneration of docker database and go files"
-	@echo "  make generate-table TABLE=tasks    # Regenerate single table"
-	@echo "  make generate-all                  # Regenerate all tables"
+	@echo "  make regen TABLE=api_keys          # After migration, regenerate api_keys"
+	@echo "  make regen-all                     # After migration, regenerate everything"
+	@echo "  make db-code-full-reset            # Nuclear option - complete reset"
+	@echo "  make generate-table TABLE=tasks    # Regenerate just tasks (skip migrate/reflect)"
 	@echo "  make db-reflect                    # Just update JSON from current DB"
 
 
+########################################
+## BUILD
+######################
+build: build-api 
 
-
-	
+build-api:
+	docker build \
+    -f workshop/docker/dockerfile.$(NAME)\
+    -t $(API_IMAGE_NAME) \
+    -t $(API_IMAGE_LATEST) \
+    --build-arg BUILD_REF=$(VERSION) \
+    --build-arg BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ") \
+    .
 
 ########################################
 ## DEV
 ######################
-# watch:
-# 	wgo run app/api/main.go
-# dev:
-# 	wgo run app/envoker/main.go
-	
-# dev-admin:
-# 	cd app/envoker/admin/react && pnpm dev
-########################################
-## DATA
-######################
+watch:
+	wgo run app/$(NAME)/main.go
+
+# ==============================================================================
+# DATA
 dev-data-up:
-	docker-compose -p envoker -f workshop/dev/envoker-local-compose.yml up  -d
+	docker-compose -p $(NAME) -f workshop/dev/$(NAME)-data-compose.yml up  -d
 
 dev-data-down:
-	docker-compose -p envoker -f workshop/dev/envoker-local-compose.yml down
+	docker-compose -p $(NAME) -f workshop/dev/$(NAME)-data-compose.yml down
 
 dev-psql:
 	PGPASSWORD=admin psql -h localhost -p 5432 -U postgres -d $(PG_DEFAULT)
+
 
 .PHONY: migrate
 migrate: ## Run database migrations
@@ -119,13 +141,38 @@ migrate: ## Run database migrations
 	@go run $(TOOLING_PATH)/main.go migrate
 
 
+########################################
+## RUN
+######################
+run-api:
+	docker run -p 3000:3000 \
+		--env-file .env \
+		$(API_IMAGE_LATEST)
 
 ########################################
-## DOCKER RUN
+## TESTING
 ######################
-docker-run:
-	docker run -p 3000:3000 --env-file .env $(APP_IMAGE_LATEST) 
+# Run all tests
+test:
+	go test ./...
 
-docker-stop:
-	docker stop $(APP_IMAGE_LATEST)
+# Run tests with verbose output
+test-v:
+	go test -v ./...
 
+# Run tests and generate coverage report
+test-coverage:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+
+# Run tests with race condition detection
+test-race:
+	go test -race ./...
+
+# Run a specific test (usage: make test-one PKG=./path/to/package TEST=TestName)
+test-one:
+	go test -v $(PKG) -run $(TEST)
+
+# Run tests with a longer timeout for containers
+test-long:
+	go test -v -timeout 5m ./...

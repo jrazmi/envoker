@@ -24,21 +24,19 @@ func Generate(tableDef *schema.TableDefinition, config Config) (*GenerateResult,
 
 	// Determine output paths
 	repoDir := filepath.Join(config.OutputDir, tableDef.Naming.RepoPath)
-	modelFile := filepath.Join(repoDir, "model_gen.go")
-	repoFile := filepath.Join(repoDir, "repo.go")
-	repoGenFile := filepath.Join(repoDir, "repo_gen.go")
-	fopGenFile := filepath.Join(repoDir, "fop_gen.go")
+	generatedFile := filepath.Join(repoDir, "generated.go")
+	modelFile := filepath.Join(repoDir, "model.go")
+	fopFile := filepath.Join(repoDir, "fop.go")
+	repositoryFile := filepath.Join(repoDir, "repository.go")
 
-	templateData.ModelFilePath = modelFile
-	templateData.RepositoryFilePath = repoFile
+	templateData.ModelFilePath = generatedFile
+	templateData.RepositoryFilePath = repositoryFile
 
 	// Check for existing files and prompt if needed
 	if !config.ForceOverwrite {
-		for _, file := range []string{modelFile, repoGenFile, fopGenFile} {
-			if fileExists(file) {
-				result.Warnings = append(result.Warnings, fmt.Sprintf("File exists: %s (use -force to overwrite)", file))
-				return result, fmt.Errorf("file already exists: %s", file)
-			}
+		if fileExists(generatedFile) {
+			result.Warnings = append(result.Warnings, fmt.Sprintf("File exists: %s (use -force to overwrite)", generatedFile))
+			return result, fmt.Errorf("file already exists: %s", generatedFile)
 		}
 	}
 
@@ -48,35 +46,43 @@ func Generate(tableDef *schema.TableDefinition, config Config) (*GenerateResult,
 		return result, fmt.Errorf("create directory: %w", err)
 	}
 
-	// Generate model_gen.go
-	if err := generateFile(modelFile, ModelTemplate, templateData); err != nil {
+	// Generate generated.go (ALWAYS regenerate - contains ALL generated code)
+	if err := generateFile(generatedFile, GeneratedTemplate, templateData); err != nil {
 		result.Errors = append(result.Errors, err)
-		return result, fmt.Errorf("generate model file: %w", err)
+		return result, fmt.Errorf("generate generated file: %w", err)
 	}
-	result.ModelFile = modelFile
+	result.ModelFile = generatedFile
 
-	// Generate repo.go ONLY if it doesn't exist (never overwrite)
-	if !fileExists(repoFile) {
-		if err := generateFile(repoFile, RepoTemplate, templateData); err != nil {
+	// Generate model.go ONLY if it doesn't exist (custom file with type aliases)
+	if !fileExists(modelFile) {
+		if err := generateFile(modelFile, ModelTemplate, templateData); err != nil {
+			result.Errors = append(result.Errors, err)
+			return result, fmt.Errorf("generate model file: %w", err)
+		}
+	} else {
+		result.Warnings = append(result.Warnings, fmt.Sprintf("Skipped: %s (already exists, will not overwrite)", modelFile))
+	}
+
+	// Generate fop.go ONLY if it doesn't exist (custom file with filter type alias)
+	if !fileExists(fopFile) {
+		if err := generateFile(fopFile, FOPTemplate, templateData); err != nil {
+			result.Errors = append(result.Errors, err)
+			return result, fmt.Errorf("generate fop file: %w", err)
+		}
+	} else {
+		result.Warnings = append(result.Warnings, fmt.Sprintf("Skipped: %s (already exists, will not overwrite)", fopFile))
+	}
+
+	// Generate repository.go ONLY if it doesn't exist (custom file with Storer interface and Repository)
+	if !fileExists(repositoryFile) {
+		if err := generateFile(repositoryFile, RepositoryTemplate, templateData); err != nil {
 			result.Errors = append(result.Errors, err)
 			return result, fmt.Errorf("generate repository file: %w", err)
 		}
-		result.RepositoryFile = repoFile
+		result.RepositoryFile = repositoryFile
 	} else {
-		result.Warnings = append(result.Warnings, fmt.Sprintf("Skipped: %s (already exists, will not overwrite)", repoFile))
-		result.RepositoryFile = repoFile
-	}
-
-	// Generate repo_gen.go (always regenerate)
-	if err := generateFile(repoGenFile, RepoGenTemplate, templateData); err != nil {
-		result.Errors = append(result.Errors, err)
-		return result, fmt.Errorf("generate repo_gen file: %w", err)
-	}
-
-	// Generate fop_gen.go (always regenerate)
-	if err := generateFile(fopGenFile, RepoFopGenTemplate, templateData); err != nil {
-		result.Errors = append(result.Errors, err)
-		return result, fmt.Errorf("generate fop_gen file: %w", err)
+		result.Warnings = append(result.Warnings, fmt.Sprintf("Skipped: %s (already exists, will not overwrite)", repositoryFile))
+		result.RepositoryFile = repositoryFile
 	}
 
 	return result, nil

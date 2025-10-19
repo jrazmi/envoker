@@ -3,7 +3,7 @@
   "source": "postgres",
   "database": "postgres",
   "schema_name": "public",
-  "reflected_at": "2025-10-18T12:26:23.038668-07:00",
+  "reflected_at": "2025-10-19T13:10:56.470826-07:00",
   "tables": {
     "schema_migrations": {
       "table_name": "schema_migrations",

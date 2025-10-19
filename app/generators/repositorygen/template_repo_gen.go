@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	"github.com/jrazmi/envoker/core/scaffolding/fop"
+	"github.com/jrazmi/envoker/sdk/logger"
 )
 
 // GeneratedStorer defines the auto-generated storage operations for {{.EntityName}}
@@ -43,8 +44,16 @@ type GeneratedStorer interface {
 {{- end}}
 }
 
+// GeneratedRepository provides default implementations for all {{.EntityName}} CRUD operations.
+// Embed this struct in your custom Repository (in repo.go) to inherit default behavior
+// that you can selectively override.
+type GeneratedRepository struct {
+	log    *logger.Logger
+	storer Storer
+}
+
 // Create inserts a new {{.EntityNameLower}}
-func (r *Repository) Create(ctx context.Context, input {{.CreateStructName}}) ({{.EntityName}}, error) {
+func (r *GeneratedRepository) Create(ctx context.Context, input {{.CreateStructName}}) ({{.EntityName}}, error) {
 	entity, err := r.storer.Create(ctx, input)
 	if err != nil {
 		return {{.EntityName}}{}, fmt.Errorf("create {{.EntityNameLower}}: %w", err)
@@ -53,7 +62,7 @@ func (r *Repository) Create(ctx context.Context, input {{.CreateStructName}}) ({
 }
 
 // Get retrieves a {{.EntityNameLower}} by its ID
-func (r *Repository) Get(ctx context.Context, {{.PKParamName}} {{.PKGoType}}) ({{.EntityName}}, error) {
+func (r *GeneratedRepository) Get(ctx context.Context, {{.PKParamName}} {{.PKGoType}}) ({{.EntityName}}, error) {
 	entity, err := r.storer.Get(ctx, {{.PKParamName}})
 	if err != nil {
 		return {{.EntityName}}{}, fmt.Errorf("get {{.EntityNameLower}}[%v]: %w", {{.PKParamName}}, err)
@@ -62,7 +71,7 @@ func (r *Repository) Get(ctx context.Context, {{.PKParamName}} {{.PKGoType}}) ({
 }
 
 // Update modifies an existing {{.EntityNameLower}}
-func (r *Repository) Update(ctx context.Context, {{.PKParamName}} {{.PKGoType}}, input {{.UpdateStructName}}) error {
+func (r *GeneratedRepository) Update(ctx context.Context, {{.PKParamName}} {{.PKGoType}}, input {{.UpdateStructName}}) error {
 	if err := r.storer.Update(ctx, {{.PKParamName}}, input); err != nil {
 		return fmt.Errorf("update {{.EntityNameLower}}[%v]: %w", {{.PKParamName}}, err)
 	}
@@ -70,7 +79,7 @@ func (r *Repository) Update(ctx context.Context, {{.PKParamName}} {{.PKGoType}},
 }
 
 // Delete removes a {{.EntityNameLower}} by its ID
-func (r *Repository) Delete(ctx context.Context, {{.PKParamName}} {{.PKGoType}}) error {
+func (r *GeneratedRepository) Delete(ctx context.Context, {{.PKParamName}} {{.PKGoType}}) error {
 	if err := r.storer.Delete(ctx, {{.PKParamName}}); err != nil {
 		return fmt.Errorf("delete {{.EntityNameLower}}[%v]: %w", {{.PKParamName}}, err)
 	}
@@ -78,7 +87,7 @@ func (r *Repository) Delete(ctx context.Context, {{.PKParamName}} {{.PKGoType}})
 }
 
 // List retrieves {{.EntityNamePlural}} with filters, ordering, and pagination
-func (r *Repository) List(ctx context.Context, filter {{.EntityName}}Filter, order fop.By, page fop.PageStringCursor) ([]{{.EntityName}}, fop.Pagination, error) {
+func (r *GeneratedRepository) List(ctx context.Context, filter {{.EntityName}}Filter, order fop.By, page fop.PageStringCursor) ([]{{.EntityName}}, fop.Pagination, error) {
 	// Request one more record than needed to check for next page
 	listPage := fop.PageStringCursor{
 		Limit:  page.Limit + 1,
@@ -152,7 +161,7 @@ func (r *Repository) List(ctx context.Context, filter {{.EntityName}}Filter, ord
 {{- if .HasStatusColumn}}
 
 // Archive sets the status to 'archived'
-func (r *Repository) Archive(ctx context.Context, {{.PKParamName}} {{.PKGoType}}) error {
+func (r *GeneratedRepository) Archive(ctx context.Context, {{.PKParamName}} {{.PKGoType}}) error {
 	if err := r.storer.Archive(ctx, {{.PKParamName}}); err != nil {
 		return fmt.Errorf("archive {{.EntityNameLower}}[%v]: %w", {{.PKParamName}}, err)
 	}
@@ -162,7 +171,7 @@ func (r *Repository) Archive(ctx context.Context, {{.PKParamName}} {{.PKGoType}}
 {{- range .ForeignKeys}}
 
 // {{.MethodName}} retrieves {{$.EntityNamePlural}} for a given {{.RefEntityName}}
-func (r *Repository) {{.MethodName}}(ctx context.Context, {{.FKParamName}} {{.FKGoType}}, order fop.By, page fop.PageStringCursor) ([]{{$.EntityName}}, fop.Pagination, error) {
+func (r *GeneratedRepository) {{.MethodName}}(ctx context.Context, {{.FKParamName}} {{.FKGoType}}, order fop.By, page fop.PageStringCursor) ([]{{$.EntityName}}, fop.Pagination, error) {
 	// Request one more record than needed to check for next page
 	listPage := fop.PageStringCursor{
 		Limit:  page.Limit + 1,

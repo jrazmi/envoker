@@ -85,13 +85,12 @@ func GenerateFromSchema(tableDef *schema.TableDefinition, config GenerateConfig)
 
 	// Determine output paths
 	storeDir := filepath.Join(config.OutputDir, naming.StorePath)
-	storeInitFile := filepath.Join(storeDir, "store.go")
-	storeGenFile := filepath.Join(storeDir, "store_gen.go")
-	fopGenFile := filepath.Join(storeDir, "fop_gen.go")
+	generatedFile := filepath.Join(storeDir, "generated.go")
+	storeFile := filepath.Join(storeDir, "store.go")
 
 	// Check for existing file
-	if !config.ForceOverwrite && fileExists(storeGenFile) {
-		return "", fmt.Errorf("file already exists: %s (use -force to overwrite)", storeGenFile)
+	if !config.ForceOverwrite && fileExists(generatedFile) {
+		return "", fmt.Errorf("file already exists: %s (use -force to overwrite)", generatedFile)
 	}
 
 	// Create output directory
@@ -99,24 +98,19 @@ func GenerateFromSchema(tableDef *schema.TableDefinition, config GenerateConfig)
 		return "", fmt.Errorf("create directory: %w", err)
 	}
 
-	// Generate store.go ONLY if it doesn't exist (never overwrite)
-	if !fileExists(storeInitFile) {
-		if err := generateTemplateFile(storeInitFile, StoreInitTemplate, templateData); err != nil {
-			return "", fmt.Errorf("generate store init file: %w", err)
+	// Generate generated.go (ALWAYS regenerate - contains ALL generated SQL)
+	if err := generateTemplateFile(generatedFile, GeneratedStoreTemplate, templateData); err != nil {
+		return "", fmt.Errorf("generate generated file: %w", err)
+	}
+
+	// Generate store.go ONLY if it doesn't exist (never overwrite - custom file)
+	if !fileExists(storeFile) {
+		if err := generateTemplateFile(storeFile, StoreCustomTemplate, templateData); err != nil {
+			return "", fmt.Errorf("generate store file: %w", err)
 		}
 	}
 
-	// Generate store_gen.go (CRUD operations)
-	if err := generateTemplateFile(storeGenFile, StoreTemplate, templateData); err != nil {
-		return "", fmt.Errorf("generate store file: %w", err)
-	}
-
-	// Generate fop_gen.go (filter and ordering logic)
-	if err := generateTemplateFile(fopGenFile, FopTemplate, templateData); err != nil {
-		return "", fmt.Errorf("generate fop file: %w", err)
-	}
-
-	return storeGenFile, nil
+	return generatedFile, nil
 }
 
 // convertColumnsToFields converts schema.Column to Field
