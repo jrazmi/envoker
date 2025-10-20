@@ -8,9 +8,12 @@ import (
 	"syscall"
 
 	"github.com/jrazmi/envoker/bridge/repositories/tasksrepobridge"
+	"github.com/jrazmi/envoker/bridge/repositories/usersrepobridge"
 	"github.com/jrazmi/envoker/bridge/scaffolding/mid"
 	"github.com/jrazmi/envoker/core/repositories/tasksrepo"
 	"github.com/jrazmi/envoker/core/repositories/tasksrepo/stores/taskspgxstore"
+	"github.com/jrazmi/envoker/core/repositories/usersrepo"
+	"github.com/jrazmi/envoker/core/repositories/usersrepo/stores/userspgxstore"
 	"github.com/jrazmi/envoker/infrastructure/postgresdb"
 	"github.com/jrazmi/envoker/infrastructure/web"
 	"github.com/jrazmi/envoker/sdk/environment"
@@ -23,6 +26,7 @@ var appName = "ENVOKER"
 
 type Repositories struct {
 	TaskRepository *tasksrepo.Repository
+	UserRepository *usersrepo.Repository
 }
 
 type APIConfig struct {
@@ -34,7 +38,10 @@ type APIConfig struct {
 func setupAPIv1Routes(app *web.WebHandler, cfg APIConfig) *web.RouteGroup {
 	// Create the base API v1 group
 	api := app.Group("/api/v1")
-
+	usersrepobridge.AddHttpRoutes(api, usersrepobridge.Config{
+		Log:        cfg.Logger,
+		Repository: cfg.Repositories.UserRepository,
+	})
 	tasksrepobridge.AddHttpRoutes(api, tasksrepobridge.Config{
 		Log:        cfg.Logger,
 		Repository: cfg.Repositories.TaskRepository,
@@ -72,6 +79,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 
 	repositories := Repositories{
 		TaskRepository: tasksrepo.NewRepository(log, taskspgxstore.NewStore(log, pg)),
+		UserRepository: usersrepo.NewRepository(log, userspgxstore.NewStore(log, pg)),
 	}
 
 	// ==============================================================================

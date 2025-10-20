@@ -32,7 +32,7 @@ type generatedQueryParams struct {
 	AppliedAt  string
 }
 
-// generatedPathParams holds path parameter values
+// generatedPathParams holds path parameter values (parsed to their actual types)
 type generatedPathParams struct {
 	Version string
 }
@@ -74,11 +74,17 @@ func parseGeneratedFilter(qp generatedQueryParams) (schemamigrationsrepo.SchemaM
 	return filter, nil
 }
 
-// parseGeneratedPath extracts path parameters
+// parseGeneratedPath extracts and parses path parameters to their actual types
 func parseGeneratedPath(r *http.Request) (generatedPathParams, error) {
-	pp := generatedPathParams{
-		Version: r.PathValue("version"),
+	var pp generatedPathParams
+
+	// Parse primary key
+	pkStr := r.PathValue("version")
+	if pkStr == "" {
+		return pp, fmt.Errorf("version is required")
 	}
+	pp.Version = pkStr
+
 	return pp, nil
 }
 
@@ -162,13 +168,9 @@ func (b *GeneratedBridge) httpGetByID(ctx context.Context, r *http.Request) web.
 		return errs.Newf(errs.InvalidArgument, "invalid path arguments: %s", err)
 	}
 
-	if qpath.Version == "" {
-		return errs.Newf(errs.InvalidArgument, "version is required")
-	}
-
 	record, err := b.schemaMigrationRepository.Get(ctx, qpath.Version)
 	if err != nil {
-		return errs.Newf(errs.NotFound, "schemaMigration not found: %s", qpath.Version)
+		return errs.Newf(errs.NotFound, "schemaMigration not found: %v", qpath.Version)
 	}
 
 	return fopbridge.NewRecordResponse(record)
@@ -196,10 +198,6 @@ func (b *GeneratedBridge) httpUpdate(ctx context.Context, r *http.Request) web.E
 		return errs.Newf(errs.InvalidArgument, "invalid path arguments: %s", err)
 	}
 
-	if qpath.Version == "" {
-		return errs.Newf(errs.InvalidArgument, "version is required")
-	}
-
 	var input schemamigrationsrepo.UpdateSchemaMigration
 	if err := web.Decode(r, &input); err != nil {
 		return errs.Newf(errs.InvalidArgument, "decode: %s", err)
@@ -218,10 +216,6 @@ func (b *GeneratedBridge) httpDelete(ctx context.Context, r *http.Request) web.E
 	qpath, err := parseGeneratedPath(r)
 	if err != nil {
 		return errs.Newf(errs.InvalidArgument, "invalid path arguments: %s", err)
-	}
-
-	if qpath.Version == "" {
-		return errs.Newf(errs.InvalidArgument, "version is required")
 	}
 
 	err = b.schemaMigrationRepository.Delete(ctx, qpath.Version)

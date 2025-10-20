@@ -39,7 +39,7 @@ type generatedQueryParams struct {
 	LastRunAt        string
 }
 
-// generatedPathParams holds path parameter values
+// generatedPathParams holds path parameter values (parsed to their actual types)
 type generatedPathParams struct {
 	TaskId string
 }
@@ -127,11 +127,17 @@ func parseGeneratedFilter(qp generatedQueryParams) (tasksrepo.TaskFilter, error)
 	return filter, nil
 }
 
-// parseGeneratedPath extracts path parameters
+// parseGeneratedPath extracts and parses path parameters to their actual types
 func parseGeneratedPath(r *http.Request) (generatedPathParams, error) {
-	pp := generatedPathParams{
-		TaskId: r.PathValue("task_id"),
+	var pp generatedPathParams
+
+	// Parse primary key
+	pkStr := r.PathValue("task_id")
+	if pkStr == "" {
+		return pp, fmt.Errorf("task_id is required")
 	}
+	pp.TaskId = pkStr
+
 	return pp, nil
 }
 
@@ -221,13 +227,9 @@ func (b *GeneratedBridge) httpGetByID(ctx context.Context, r *http.Request) web.
 		return errs.Newf(errs.InvalidArgument, "invalid path arguments: %s", err)
 	}
 
-	if qpath.TaskId == "" {
-		return errs.Newf(errs.InvalidArgument, "task_id is required")
-	}
-
 	record, err := b.taskRepository.Get(ctx, qpath.TaskId)
 	if err != nil {
-		return errs.Newf(errs.NotFound, "task not found: %s", qpath.TaskId)
+		return errs.Newf(errs.NotFound, "task not found: %v", qpath.TaskId)
 	}
 
 	return fopbridge.NewRecordResponse(record)
@@ -255,10 +257,6 @@ func (b *GeneratedBridge) httpUpdate(ctx context.Context, r *http.Request) web.E
 		return errs.Newf(errs.InvalidArgument, "invalid path arguments: %s", err)
 	}
 
-	if qpath.TaskId == "" {
-		return errs.Newf(errs.InvalidArgument, "task_id is required")
-	}
-
 	var input tasksrepo.UpdateTask
 	if err := web.Decode(r, &input); err != nil {
 		return errs.Newf(errs.InvalidArgument, "decode: %s", err)
@@ -277,10 +275,6 @@ func (b *GeneratedBridge) httpDelete(ctx context.Context, r *http.Request) web.E
 	qpath, err := parseGeneratedPath(r)
 	if err != nil {
 		return errs.Newf(errs.InvalidArgument, "invalid path arguments: %s", err)
-	}
-
-	if qpath.TaskId == "" {
-		return errs.Newf(errs.InvalidArgument, "task_id is required")
 	}
 
 	err = b.taskRepository.Delete(ctx, qpath.TaskId)
