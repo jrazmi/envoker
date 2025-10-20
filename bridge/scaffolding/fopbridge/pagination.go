@@ -22,6 +22,10 @@ type CodeResponse struct {
 	Message string `json:"message"`
 }
 
+func NewCodeResponse(code, message string) CodeResponse {
+	return CodeResponse{Code: code, Message: message}
+}
+
 func (c CodeResponse) Encode() ([]byte, string, error) {
 	data, err := json.Marshal(c)
 	return data, "application/json", err
@@ -34,6 +38,11 @@ type RecordResponse[T any] struct {
 
 func NewRecordResponse[T any](record T) RecordResponse[T] {
 	return RecordResponse[T]{Record: record}
+}
+
+func (r RecordResponse[T]) Encode() ([]byte, string, error) {
+	data, err := json.Marshal(r)
+	return data, "application/json", err
 }
 
 // ============================================================================

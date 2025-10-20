@@ -6,7 +6,6 @@ package schemamigrationsrepobridge
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -17,89 +16,6 @@ import (
 	"github.com/jrazmi/envoker/core/scaffolding/fop"
 	"github.com/jrazmi/envoker/infrastructure/web"
 )
-
-// ========================================
-// BRIDGE MODELS
-// ========================================
-
-// GeneratedSchemaMigration represents the bridge model for schemaMigration
-type GeneratedSchemaMigration struct {
-	Version   string    `json:"version"`
-	Checksum  string    `json:"checksum"`
-	AppliedAt time.Time `json:"applied_at"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-// Encode implements the encoder interface
-func (t GeneratedSchemaMigration) Encode() ([]byte, string, error) {
-	data, err := json.Marshal(t)
-	return data, "application/json", err
-}
-
-// GeneratedCreateSchemaMigrationInput represents the input for creating a new schemaMigration
-type GeneratedCreateSchemaMigrationInput struct {
-	Version   string    `json:"version"`
-	Checksum  string    `json:"checksum"`
-	AppliedAt time.Time `json:"applied_at,omitempty"`
-}
-
-// Decode implements the decoder interface
-func (c *GeneratedCreateSchemaMigrationInput) Decode(data []byte) error {
-	return json.Unmarshal(data, c)
-}
-
-// GeneratedUpdateSchemaMigrationInput represents the input for updating a schemaMigration
-type GeneratedUpdateSchemaMigrationInput struct {
-	Checksum  *string    `json:"checksum,omitempty"`
-	AppliedAt *time.Time `json:"applied_at,omitempty"`
-}
-
-// Decode implements the decoder interface
-func (u *GeneratedUpdateSchemaMigrationInput) Decode(data []byte) error {
-	return json.Unmarshal(data, u)
-}
-
-// ========================================
-// MARSHALING FUNCTIONS
-// ========================================
-
-// MarshalToBridge converts a repository SchemaMigration to a bridge SchemaMigration
-func MarshalToBridge(repo schemamigrationsrepo.SchemaMigration) GeneratedSchemaMigration {
-	return GeneratedSchemaMigration{
-		Version:   repo.Version,
-		Checksum:  repo.Checksum,
-		AppliedAt: repo.AppliedAt,
-		CreatedAt: repo.CreatedAt,
-		UpdatedAt: repo.UpdatedAt,
-	}
-}
-
-// MarshalListToBridge converts a list of repository SchemaMigrations to bridge SchemaMigrations
-func MarshalListToBridge(repos []schemamigrationsrepo.SchemaMigration) []GeneratedSchemaMigration {
-	result := make([]GeneratedSchemaMigration, len(repos))
-	for i, repo := range repos {
-		result[i] = MarshalToBridge(repo)
-	}
-	return result
-}
-
-// MarshalCreateToRepository converts a bridge Create input to repository Create input
-func MarshalCreateToRepository(input GeneratedCreateSchemaMigrationInput) schemamigrationsrepo.CreateSchemaMigration {
-	return schemamigrationsrepo.CreateSchemaMigration{
-		Version:   input.Version,
-		Checksum:  input.Checksum,
-		AppliedAt: input.AppliedAt,
-	}
-}
-
-// MarshalUpdateToRepository converts a bridge Update input to repository Update input
-func MarshalUpdateToRepository(input GeneratedUpdateSchemaMigrationInput) schemamigrationsrepo.UpdateSchemaMigration {
-	return schemamigrationsrepo.UpdateSchemaMigration{
-		Checksum:  input.Checksum,
-		AppliedAt: input.AppliedAt,
-	}
-}
 
 // ========================================
 // QUERY PARAMS & PATH PARAMS
@@ -196,18 +112,9 @@ func parseGeneratedOrderBy(order string) fop.By {
 
 // GeneratedBridge provides default HTTP handler implementations.
 // Embed this in your custom bridge struct to inherit default handlers.
+// The bridge is tightly coupled to the repository - it directly uses the concrete repository type.
 type GeneratedBridge struct {
-	schemaMigrationRepository GeneratedSchemaMigrationRepository
-}
-
-// GeneratedSchemaMigrationRepository defines the repository interface needed by bridge handlers.
-// Use a type alias in model.go to allow zero-cost abstraction or interface embedding for extension.
-type GeneratedSchemaMigrationRepository interface {
-	Create(ctx context.Context, input schemamigrationsrepo.CreateSchemaMigration) (schemamigrationsrepo.SchemaMigration, error)
-	Get(ctx context.Context, version string) (schemamigrationsrepo.SchemaMigration, error)
-	Update(ctx context.Context, version string, input schemamigrationsrepo.UpdateSchemaMigration) error
-	Delete(ctx context.Context, version string) error
-	List(ctx context.Context, filter schemamigrationsrepo.SchemaMigrationFilter, orderBy fop.By, page fop.PageStringCursor) ([]schemamigrationsrepo.SchemaMigration, fop.Pagination, error)
+	schemaMigrationRepository *schemamigrationsrepo.Repository
 }
 
 // ============================================================================
@@ -245,7 +152,7 @@ func (b *GeneratedBridge) httpList(ctx context.Context, r *http.Request) web.Enc
 		return errs.Newf(errs.Internal, "list SchemaMigrations: %s", err)
 	}
 
-	return fopbridge.NewPaginatedResult(MarshalListToBridge(records), pagination)
+	return fopbridge.NewPaginatedResult(records, pagination)
 }
 
 // httpGetByID handles GET requests for retrieving a specific schemaMigration by ID
@@ -264,24 +171,22 @@ func (b *GeneratedBridge) httpGetByID(ctx context.Context, r *http.Request) web.
 		return errs.Newf(errs.NotFound, "schemaMigration not found: %s", qpath.Version)
 	}
 
-	return MarshalToBridge(record)
+	return fopbridge.NewRecordResponse(record)
 }
 
 // httpCreate handles POST requests for creating a new schemaMigration
 func (b *GeneratedBridge) httpCreate(ctx context.Context, r *http.Request) web.Encoder {
-	var input GeneratedCreateSchemaMigrationInput
+	var input schemamigrationsrepo.CreateSchemaMigration
 	if err := web.Decode(r, &input); err != nil {
 		return errs.Newf(errs.InvalidArgument, "decode: %s", err)
 	}
 
-	createInput := MarshalCreateToRepository(input)
-
-	record, err := b.schemaMigrationRepository.Create(ctx, createInput)
+	record, err := b.schemaMigrationRepository.Create(ctx, input)
 	if err != nil {
 		return errs.Newf(errs.Internal, "create schemaMigration: %s", err)
 	}
 
-	return MarshalToBridge(record)
+	return fopbridge.NewRecordResponse(record)
 }
 
 // httpUpdate handles PUT/PATCH requests for updating an existing schemaMigration
@@ -295,22 +200,17 @@ func (b *GeneratedBridge) httpUpdate(ctx context.Context, r *http.Request) web.E
 		return errs.Newf(errs.InvalidArgument, "version is required")
 	}
 
-	var input GeneratedUpdateSchemaMigrationInput
+	var input schemamigrationsrepo.UpdateSchemaMigration
 	if err := web.Decode(r, &input); err != nil {
 		return errs.Newf(errs.InvalidArgument, "decode: %s", err)
 	}
 
-	updateInput := MarshalUpdateToRepository(input)
-
-	err = b.schemaMigrationRepository.Update(ctx, qpath.Version, updateInput)
+	err = b.schemaMigrationRepository.Update(ctx, qpath.Version, input)
 	if err != nil {
 		return errs.Newf(errs.Internal, "update schemaMigration: %s", err)
 	}
 
-	return fopbridge.CodeResponse{
-		Code:    errs.OK.String(),
-		Message: "SchemaMigration updated successfully",
-	}
+	return fopbridge.NewCodeResponse(errs.OK.String(), "SchemaMigration updated successfully")
 }
 
 // httpDelete handles DELETE requests for removing a schemaMigration
@@ -329,8 +229,5 @@ func (b *GeneratedBridge) httpDelete(ctx context.Context, r *http.Request) web.E
 		return errs.Newf(errs.Internal, "delete schemaMigration: %s", err)
 	}
 
-	return fopbridge.CodeResponse{
-		Code:    errs.OK.String(),
-		Message: "SchemaMigration deleted successfully",
-	}
+	return fopbridge.NewCodeResponse(errs.OK.String(), "SchemaMigration deleted successfully")
 }

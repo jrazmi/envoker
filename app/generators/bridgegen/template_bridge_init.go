@@ -24,7 +24,7 @@ type bridge struct {
 }
 
 // newBridge creates a new {{.Entity}} bridge
-func newBridge({{.EntityNameLower}}Repository {{.EntityName}}Repository) *bridge {
+func newBridge({{.EntityNameLower}}Repository *{{.RepoPackage}}.Repository) *bridge {
 	return &bridge{
 		GeneratedBridge: GeneratedBridge{
 			{{.EntityNameLower}}Repository: {{.EntityNameLower}}Repository,

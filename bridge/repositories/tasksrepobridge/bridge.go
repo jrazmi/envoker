@@ -7,6 +7,8 @@
 
 package tasksrepobridge
 
+import "github.com/jrazmi/envoker/core/repositories/tasksrepo"
+
 // ========================================
 // BRIDGE STRUCT WITH EMBEDDING
 // ========================================
@@ -19,7 +21,7 @@ type bridge struct {
 }
 
 // newBridge creates a new Task bridge
-func newBridge(taskRepository TaskRepository) *bridge {
+func newBridge(taskRepository *tasksrepo.Repository) *bridge {
 	return &bridge{
 		GeneratedBridge: GeneratedBridge{
 			taskRepository: taskRepository,

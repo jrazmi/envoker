@@ -7,6 +7,8 @@
 
 package schemamigrationsrepobridge
 
+import "github.com/jrazmi/envoker/core/repositories/schemamigrationsrepo"
+
 // ========================================
 // BRIDGE STRUCT WITH EMBEDDING
 // ========================================
@@ -19,7 +21,7 @@ type bridge struct {
 }
 
 // newBridge creates a new SchemaMigration bridge
-func newBridge(schemaMigrationRepository SchemaMigrationRepository) *bridge {
+func newBridge(schemaMigrationRepository *schemamigrationsrepo.Repository) *bridge {
 	return &bridge{
 		GeneratedBridge: GeneratedBridge{
 			schemaMigrationRepository: schemaMigrationRepository,

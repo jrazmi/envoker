@@ -26,87 +26,6 @@ import (
 )
 
 // ========================================
-// BRIDGE MODELS
-// ========================================
-
-// Generated{{.EntityName}} represents the bridge model for {{.EntityNameLower}}
-type Generated{{.EntityName}} struct {
-{{- range .EntityFields}}
-	{{.BridgeName}} {{.GoType}} ` + "`json:\"{{.DBColumn}}{{if .OmitEmpty}},omitempty{{end}}\"`" + `
-{{- end}}
-}
-
-// Encode implements the encoder interface
-func (t Generated{{.EntityName}}) Encode() ([]byte, string, error) {
-	data, err := json.Marshal(t)
-	return data, "application/json", err
-}
-
-// GeneratedCreate{{.EntityName}}Input represents the input for creating a new {{.EntityNameLower}}
-type GeneratedCreate{{.EntityName}}Input struct {
-{{- range .CreateFields}}
-	{{.BridgeName}} {{.GoType}} ` + "`json:\"{{.DBColumn}}{{if .OmitEmpty}},omitempty{{end}}\"`" + `
-{{- end}}
-}
-
-// Decode implements the decoder interface
-func (c *GeneratedCreate{{.EntityName}}Input) Decode(data []byte) error {
-	return json.Unmarshal(data, c)
-}
-
-// GeneratedUpdate{{.EntityName}}Input represents the input for updating a {{.EntityNameLower}}
-type GeneratedUpdate{{.EntityName}}Input struct {
-{{- range .UpdateFields}}
-	{{.BridgeName}} {{.GoType}} ` + "`json:\"{{.DBColumn}},omitempty\"`" + `
-{{- end}}
-}
-
-// Decode implements the decoder interface
-func (u *GeneratedUpdate{{.EntityName}}Input) Decode(data []byte) error {
-	return json.Unmarshal(data, u)
-}
-
-// ========================================
-// MARSHALING FUNCTIONS
-// ========================================
-
-// MarshalToBridge converts a repository {{.EntityName}} to a bridge {{.EntityName}}
-func MarshalToBridge(repo {{.RepoPackage}}.{{.EntityName}}) Generated{{.EntityName}} {
-	return Generated{{.EntityName}}{
-{{- range .EntityFields}}
-		{{.BridgeName}}: repo.{{.RepoName}},
-{{- end}}
-	}
-}
-
-// MarshalListToBridge converts a list of repository {{.EntityNamePlural}} to bridge {{.EntityNamePlural}}
-func MarshalListToBridge(repos []{{.RepoPackage}}.{{.EntityName}}) []Generated{{.EntityName}} {
-	result := make([]Generated{{.EntityName}}, len(repos))
-	for i, repo := range repos {
-		result[i] = MarshalToBridge(repo)
-	}
-	return result
-}
-
-// MarshalCreateToRepository converts a bridge Create input to repository Create input
-func MarshalCreateToRepository(input GeneratedCreate{{.EntityName}}Input) {{.RepoPackage}}.Create{{.EntityName}} {
-	return {{.RepoPackage}}.Create{{.EntityName}}{
-{{- range .CreateFields}}
-		{{.RepoName}}: input.{{.BridgeName}},
-{{- end}}
-	}
-}
-
-// MarshalUpdateToRepository converts a bridge Update input to repository Update input
-func MarshalUpdateToRepository(input GeneratedUpdate{{.EntityName}}Input) {{.RepoPackage}}.Update{{.EntityName}} {
-	return {{.RepoPackage}}.Update{{.EntityName}}{
-{{- range .UpdateFields}}
-		{{.RepoName}}: input.{{.BridgeName}},
-{{- end}}
-	}
-}
-
-// ========================================
 // QUERY PARAMS & PATH PARAMS
 // ========================================
 
@@ -314,21 +233,9 @@ func parseGeneratedOrderBy(order string) fop.By {
 
 // GeneratedBridge provides default HTTP handler implementations.
 // Embed this in your custom bridge struct to inherit default handlers.
+// The bridge is tightly coupled to the repository - it directly uses the concrete repository type.
 type GeneratedBridge struct {
-	{{.EntityNameLower}}Repository Generated{{.EntityName}}Repository
-}
-
-// Generated{{.EntityName}}Repository defines the repository interface needed by bridge handlers.
-// Use a type alias in model.go to allow zero-cost abstraction or interface embedding for extension.
-type Generated{{.EntityName}}Repository interface {
-	Create(ctx context.Context, input {{.RepoPackage}}.Create{{.EntityName}}) ({{.RepoPackage}}.{{.EntityName}}, error)
-	Get(ctx context.Context, {{.PKParamName}} {{.PKGoType}}) ({{.RepoPackage}}.{{.EntityName}}, error)
-	Update(ctx context.Context, {{.PKParamName}} {{.PKGoType}}, input {{.RepoPackage}}.Update{{.EntityName}}) error
-	Delete(ctx context.Context, {{.PKParamName}} {{.PKGoType}}) error
-	List(ctx context.Context, filter {{.RepoPackage}}.{{.EntityName}}Filter, orderBy fop.By, page fop.PageStringCursor) ([]{{.RepoPackage}}.{{.EntityName}}, fop.Pagination, error)
-{{- range .ForeignKeys}}
-	ListBy{{.FKGoName}}(ctx context.Context, {{.FKParamName}} {{.FKGoType}}, orderBy fop.By, page fop.PageStringCursor) ([]{{$.RepoPackage}}.{{$.EntityName}}, fop.Pagination, error)
-{{- end}}
+	{{.EntityNameLower}}Repository *{{.RepoPackage}}.Repository
 }
 
 // ============================================================================
@@ -373,7 +280,7 @@ func (b *GeneratedBridge) httpList(ctx context.Context, r *http.Request) web.Enc
 		return errs.Newf(errs.Internal, "list {{.EntityNamePlural}}: %s", err)
 	}
 
-	return fopbridge.NewPaginatedResult(MarshalListToBridge(records), pagination)
+	return fopbridge.NewPaginatedResult(records, pagination)
 }
 
 // httpGetByID handles GET requests for retrieving a specific {{.EntityNameLower}} by ID
@@ -392,24 +299,22 @@ func (b *GeneratedBridge) httpGetByID(ctx context.Context, r *http.Request) web.
 		return errs.Newf(errs.NotFound, "{{.EntityNameLower}} not found: %s", qpath.{{.PKGoName}})
 	}
 
-	return MarshalToBridge(record)
+	return fopbridge.NewRecordResponse(record)
 }
 
 // httpCreate handles POST requests for creating a new {{.EntityNameLower}}
 func (b *GeneratedBridge) httpCreate(ctx context.Context, r *http.Request) web.Encoder {
-	var input GeneratedCreate{{.EntityName}}Input
+	var input {{.RepoPackage}}.Create{{.EntityName}}
 	if err := web.Decode(r, &input); err != nil {
 		return errs.Newf(errs.InvalidArgument, "decode: %s", err)
 	}
 
-	createInput := MarshalCreateToRepository(input)
-
-	record, err := b.{{.EntityNameLower}}Repository.Create(ctx, createInput)
+	record, err := b.{{.EntityNameLower}}Repository.Create(ctx, input)
 	if err != nil {
 		return errs.Newf(errs.Internal, "create {{.EntityNameLower}}: %s", err)
 	}
 
-	return MarshalToBridge(record)
+	return fopbridge.NewRecordResponse(record)
 }
 
 // httpUpdate handles PUT/PATCH requests for updating an existing {{.EntityNameLower}}
@@ -423,22 +328,17 @@ func (b *GeneratedBridge) httpUpdate(ctx context.Context, r *http.Request) web.E
 		return errs.Newf(errs.InvalidArgument, "{{.PKURLParam}} is required")
 	}
 
-	var input GeneratedUpdate{{.EntityName}}Input
+	var input {{.RepoPackage}}.Update{{.EntityName}}
 	if err := web.Decode(r, &input); err != nil {
 		return errs.Newf(errs.InvalidArgument, "decode: %s", err)
 	}
 
-	updateInput := MarshalUpdateToRepository(input)
-
-	err = b.{{.EntityNameLower}}Repository.Update(ctx, qpath.{{.PKGoName}}, updateInput)
+	err = b.{{.EntityNameLower}}Repository.Update(ctx, qpath.{{.PKGoName}}, input)
 	if err != nil {
 		return errs.Newf(errs.Internal, "update {{.EntityNameLower}}: %s", err)
 	}
 
-	return fopbridge.CodeResponse{
-		Code:    errs.OK.String(),
-		Message: "{{.EntityName}} updated successfully",
-	}
+	return fopbridge.NewCodeResponse(errs.OK.String(), "{{.EntityName}} updated successfully")
 }
 
 // httpDelete handles DELETE requests for removing a {{.EntityNameLower}}
@@ -457,10 +357,7 @@ func (b *GeneratedBridge) httpDelete(ctx context.Context, r *http.Request) web.E
 		return errs.Newf(errs.Internal, "delete {{.EntityNameLower}}: %s", err)
 	}
 
-	return fopbridge.CodeResponse{
-		Code:    errs.OK.String(),
-		Message: "{{.EntityName}} deleted successfully",
-	}
+	return fopbridge.NewCodeResponse(errs.OK.String(), "{{.EntityName}} deleted successfully")
 }
 {{- range .ForeignKeys}}
 
@@ -489,7 +386,7 @@ func (b *GeneratedBridge) {{.MethodName}}(ctx context.Context, r *http.Request) 
 		return errs.Newf(errs.Internal, "list {{$.EntityNamePlural}} by {{.FKGoName}}: %s", err)
 	}
 
-	return fopbridge.NewPaginatedResult(MarshalListToBridge(records), pagination)
+	return fopbridge.NewPaginatedResult(records, pagination)
 }
 {{- end}}
 `

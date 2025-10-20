@@ -6,7 +6,6 @@ package tasksrepobridge
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -18,131 +17,6 @@ import (
 	"github.com/jrazmi/envoker/core/scaffolding/fop"
 	"github.com/jrazmi/envoker/infrastructure/web"
 )
-
-// ========================================
-// BRIDGE MODELS
-// ========================================
-
-// GeneratedTask represents the bridge model for task
-type GeneratedTask struct {
-	TaskId           string           `json:"task_id"`
-	ProcessingStatus string           `json:"processing_status"`
-	CreatedAt        time.Time        `json:"created_at"`
-	UpdatedAt        time.Time        `json:"updated_at"`
-	TaskType         string           `json:"task_type"`
-	Metadata         *json.RawMessage `json:"metadata,omitempty"`
-	Priority         *int             `json:"priority,omitempty"`
-	MaxRetries       *int             `json:"max_retries,omitempty"`
-	RetryCount       *int             `json:"retry_count,omitempty"`
-	ErrorMessage     *string          `json:"error_message,omitempty"`
-	ProcessingTimeMs *int             `json:"processing_time_ms,omitempty"`
-	LastRunAt        *time.Time       `json:"last_run_at,omitempty"`
-}
-
-// Encode implements the encoder interface
-func (t GeneratedTask) Encode() ([]byte, string, error) {
-	data, err := json.Marshal(t)
-	return data, "application/json", err
-}
-
-// GeneratedCreateTaskInput represents the input for creating a new task
-type GeneratedCreateTaskInput struct {
-	TaskId           string           `json:"task_id"`
-	ProcessingStatus string           `json:"processing_status,omitempty"`
-	TaskType         string           `json:"task_type"`
-	Metadata         *json.RawMessage `json:"metadata,omitempty"`
-	Priority         *int             `json:"priority,omitempty"`
-	MaxRetries       *int             `json:"max_retries,omitempty"`
-	RetryCount       *int             `json:"retry_count,omitempty"`
-	ErrorMessage     *string          `json:"error_message,omitempty"`
-	ProcessingTimeMs *int             `json:"processing_time_ms,omitempty"`
-	LastRunAt        *time.Time       `json:"last_run_at,omitempty"`
-}
-
-// Decode implements the decoder interface
-func (c *GeneratedCreateTaskInput) Decode(data []byte) error {
-	return json.Unmarshal(data, c)
-}
-
-// GeneratedUpdateTaskInput represents the input for updating a task
-type GeneratedUpdateTaskInput struct {
-	ProcessingStatus *string          `json:"processing_status,omitempty"`
-	TaskType         *string          `json:"task_type,omitempty"`
-	Metadata         *json.RawMessage `json:"metadata,omitempty"`
-	Priority         *int             `json:"priority,omitempty"`
-	MaxRetries       *int             `json:"max_retries,omitempty"`
-	RetryCount       *int             `json:"retry_count,omitempty"`
-	ErrorMessage     *string          `json:"error_message,omitempty"`
-	ProcessingTimeMs *int             `json:"processing_time_ms,omitempty"`
-	LastRunAt        *time.Time       `json:"last_run_at,omitempty"`
-}
-
-// Decode implements the decoder interface
-func (u *GeneratedUpdateTaskInput) Decode(data []byte) error {
-	return json.Unmarshal(data, u)
-}
-
-// ========================================
-// MARSHALING FUNCTIONS
-// ========================================
-
-// MarshalToBridge converts a repository Task to a bridge Task
-func MarshalToBridge(repo tasksrepo.Task) GeneratedTask {
-	return GeneratedTask{
-		TaskId:           repo.TaskId,
-		ProcessingStatus: repo.ProcessingStatus,
-		CreatedAt:        repo.CreatedAt,
-		UpdatedAt:        repo.UpdatedAt,
-		TaskType:         repo.TaskType,
-		Metadata:         repo.Metadata,
-		Priority:         repo.Priority,
-		MaxRetries:       repo.MaxRetries,
-		RetryCount:       repo.RetryCount,
-		ErrorMessage:     repo.ErrorMessage,
-		ProcessingTimeMs: repo.ProcessingTimeMs,
-		LastRunAt:        repo.LastRunAt,
-	}
-}
-
-// MarshalListToBridge converts a list of repository Tasks to bridge Tasks
-func MarshalListToBridge(repos []tasksrepo.Task) []GeneratedTask {
-	result := make([]GeneratedTask, len(repos))
-	for i, repo := range repos {
-		result[i] = MarshalToBridge(repo)
-	}
-	return result
-}
-
-// MarshalCreateToRepository converts a bridge Create input to repository Create input
-func MarshalCreateToRepository(input GeneratedCreateTaskInput) tasksrepo.CreateTask {
-	return tasksrepo.CreateTask{
-		TaskId:           input.TaskId,
-		ProcessingStatus: input.ProcessingStatus,
-		TaskType:         input.TaskType,
-		Metadata:         input.Metadata,
-		Priority:         input.Priority,
-		MaxRetries:       input.MaxRetries,
-		RetryCount:       input.RetryCount,
-		ErrorMessage:     input.ErrorMessage,
-		ProcessingTimeMs: input.ProcessingTimeMs,
-		LastRunAt:        input.LastRunAt,
-	}
-}
-
-// MarshalUpdateToRepository converts a bridge Update input to repository Update input
-func MarshalUpdateToRepository(input GeneratedUpdateTaskInput) tasksrepo.UpdateTask {
-	return tasksrepo.UpdateTask{
-		ProcessingStatus: input.ProcessingStatus,
-		TaskType:         input.TaskType,
-		Metadata:         input.Metadata,
-		Priority:         input.Priority,
-		MaxRetries:       input.MaxRetries,
-		RetryCount:       input.RetryCount,
-		ErrorMessage:     input.ErrorMessage,
-		ProcessingTimeMs: input.ProcessingTimeMs,
-		LastRunAt:        input.LastRunAt,
-	}
-}
 
 // ========================================
 // QUERY PARAMS & PATH PARAMS
@@ -297,18 +171,9 @@ func parseGeneratedOrderBy(order string) fop.By {
 
 // GeneratedBridge provides default HTTP handler implementations.
 // Embed this in your custom bridge struct to inherit default handlers.
+// The bridge is tightly coupled to the repository - it directly uses the concrete repository type.
 type GeneratedBridge struct {
-	taskRepository GeneratedTaskRepository
-}
-
-// GeneratedTaskRepository defines the repository interface needed by bridge handlers.
-// Use a type alias in model.go to allow zero-cost abstraction or interface embedding for extension.
-type GeneratedTaskRepository interface {
-	Create(ctx context.Context, input tasksrepo.CreateTask) (tasksrepo.Task, error)
-	Get(ctx context.Context, taskId string) (tasksrepo.Task, error)
-	Update(ctx context.Context, taskId string, input tasksrepo.UpdateTask) error
-	Delete(ctx context.Context, taskId string) error
-	List(ctx context.Context, filter tasksrepo.TaskFilter, orderBy fop.By, page fop.PageStringCursor) ([]tasksrepo.Task, fop.Pagination, error)
+	taskRepository *tasksrepo.Repository
 }
 
 // ============================================================================
@@ -346,7 +211,7 @@ func (b *GeneratedBridge) httpList(ctx context.Context, r *http.Request) web.Enc
 		return errs.Newf(errs.Internal, "list Tasks: %s", err)
 	}
 
-	return fopbridge.NewPaginatedResult(MarshalListToBridge(records), pagination)
+	return fopbridge.NewPaginatedResult(records, pagination)
 }
 
 // httpGetByID handles GET requests for retrieving a specific task by ID
@@ -365,24 +230,22 @@ func (b *GeneratedBridge) httpGetByID(ctx context.Context, r *http.Request) web.
 		return errs.Newf(errs.NotFound, "task not found: %s", qpath.TaskId)
 	}
 
-	return MarshalToBridge(record)
+	return fopbridge.NewRecordResponse(record)
 }
 
 // httpCreate handles POST requests for creating a new task
 func (b *GeneratedBridge) httpCreate(ctx context.Context, r *http.Request) web.Encoder {
-	var input GeneratedCreateTaskInput
+	var input tasksrepo.CreateTask
 	if err := web.Decode(r, &input); err != nil {
 		return errs.Newf(errs.InvalidArgument, "decode: %s", err)
 	}
 
-	createInput := MarshalCreateToRepository(input)
-
-	record, err := b.taskRepository.Create(ctx, createInput)
+	record, err := b.taskRepository.Create(ctx, input)
 	if err != nil {
 		return errs.Newf(errs.Internal, "create task: %s", err)
 	}
 
-	return MarshalToBridge(record)
+	return fopbridge.NewRecordResponse(record)
 }
 
 // httpUpdate handles PUT/PATCH requests for updating an existing task
@@ -396,22 +259,17 @@ func (b *GeneratedBridge) httpUpdate(ctx context.Context, r *http.Request) web.E
 		return errs.Newf(errs.InvalidArgument, "task_id is required")
 	}
 
-	var input GeneratedUpdateTaskInput
+	var input tasksrepo.UpdateTask
 	if err := web.Decode(r, &input); err != nil {
 		return errs.Newf(errs.InvalidArgument, "decode: %s", err)
 	}
 
-	updateInput := MarshalUpdateToRepository(input)
-
-	err = b.taskRepository.Update(ctx, qpath.TaskId, updateInput)
+	err = b.taskRepository.Update(ctx, qpath.TaskId, input)
 	if err != nil {
 		return errs.Newf(errs.Internal, "update task: %s", err)
 	}
 
-	return fopbridge.CodeResponse{
-		Code:    errs.OK.String(),
-		Message: "Task updated successfully",
-	}
+	return fopbridge.NewCodeResponse(errs.OK.String(), "Task updated successfully")
 }
 
 // httpDelete handles DELETE requests for removing a task
@@ -430,8 +288,5 @@ func (b *GeneratedBridge) httpDelete(ctx context.Context, r *http.Request) web.E
 		return errs.Newf(errs.Internal, "delete task: %s", err)
 	}
 
-	return fopbridge.CodeResponse{
-		Code:    errs.OK.String(),
-		Message: "Task deleted successfully",
-	}
+	return fopbridge.NewCodeResponse(errs.OK.String(), "Task deleted successfully")
 }
