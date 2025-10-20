@@ -197,11 +197,12 @@ func parseGeneratedOrderBy(order string) fop.By {
 // GeneratedBridge provides default HTTP handler implementations.
 // Embed this in your custom bridge struct to inherit default handlers.
 type GeneratedBridge struct {
-	schemaMigrationRepository SchemaMigrationRepository
+	schemaMigrationRepository GeneratedSchemaMigrationRepository
 }
 
-// SchemaMigrationRepository defines the repository interface needed by bridge handlers
-type SchemaMigrationRepository interface {
+// GeneratedSchemaMigrationRepository defines the repository interface needed by bridge handlers.
+// Use a type alias in model.go to allow zero-cost abstraction or interface embedding for extension.
+type GeneratedSchemaMigrationRepository interface {
 	Create(ctx context.Context, input schemamigrationsrepo.CreateSchemaMigration) (schemamigrationsrepo.SchemaMigration, error)
 	Get(ctx context.Context, version string) (schemamigrationsrepo.SchemaMigration, error)
 	Update(ctx context.Context, version string, input schemamigrationsrepo.UpdateSchemaMigration) error

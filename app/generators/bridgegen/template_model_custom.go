@@ -33,4 +33,19 @@ type Create{{.EntityName}}Input = GeneratedCreate{{.EntityName}}Input
 // All fields are optional to support partial updates.
 // Change to struct embedding if you need to add custom fields or validation.
 type Update{{.EntityName}}Input = GeneratedUpdate{{.EntityName}}Input
+
+// ========================================
+// REPOSITORY INTERFACE TYPE ALIAS
+// ========================================
+
+// {{.EntityName}}Repository is the repository interface used by the bridge.
+// This is a type alias to Generated{{.EntityName}}Repository for zero-cost abstraction.
+// To extend the interface with additional methods, change to interface embedding:
+//
+// From:  type {{.EntityName}}Repository = Generated{{.EntityName}}Repository
+// To:    type {{.EntityName}}Repository interface {
+//            Generated{{.EntityName}}Repository
+//            CustomMethod(ctx context.Context, ...) error
+//        }
+type {{.EntityName}}Repository = Generated{{.EntityName}}Repository
 `

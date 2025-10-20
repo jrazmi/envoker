@@ -29,3 +29,19 @@ type CreateTaskInput = GeneratedCreateTaskInput
 // All fields are optional to support partial updates.
 // Change to struct embedding if you need to add custom fields or validation.
 type UpdateTaskInput = GeneratedUpdateTaskInput
+
+// ========================================
+// REPOSITORY INTERFACE TYPE ALIAS
+// ========================================
+
+// TaskRepository is the repository interface used by the bridge.
+// This is a type alias to GeneratedTaskRepository for zero-cost abstraction.
+// To extend the interface with additional methods, change to interface embedding:
+//
+// From:  type TaskRepository = GeneratedTaskRepository
+//
+//	To:    type TaskRepository interface {
+//	           GeneratedTaskRepository
+//	           CustomMethod(ctx context.Context, ...) error
+//	       }
+type TaskRepository = GeneratedTaskRepository

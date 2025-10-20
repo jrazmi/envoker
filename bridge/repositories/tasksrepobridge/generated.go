@@ -298,11 +298,12 @@ func parseGeneratedOrderBy(order string) fop.By {
 // GeneratedBridge provides default HTTP handler implementations.
 // Embed this in your custom bridge struct to inherit default handlers.
 type GeneratedBridge struct {
-	taskRepository TaskRepository
+	taskRepository GeneratedTaskRepository
 }
 
-// TaskRepository defines the repository interface needed by bridge handlers
-type TaskRepository interface {
+// GeneratedTaskRepository defines the repository interface needed by bridge handlers.
+// Use a type alias in model.go to allow zero-cost abstraction or interface embedding for extension.
+type GeneratedTaskRepository interface {
 	Create(ctx context.Context, input tasksrepo.CreateTask) (tasksrepo.Task, error)
 	Get(ctx context.Context, taskId string) (tasksrepo.Task, error)
 	Update(ctx context.Context, taskId string, input tasksrepo.UpdateTask) error
