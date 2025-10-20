@@ -52,11 +52,11 @@ type generatedQueryParams struct {
 {{- end}}
 }
 
-// generatedPathParams holds path parameter values
+// generatedPathParams holds path parameter values (parsed to their actual types)
 type generatedPathParams struct {
-	{{.PKGoName}} string
+	{{.PKGoName}} {{.PKGoType}}
 {{- range .ForeignKeys}}
-	{{.FKGoName}} string
+	{{.FKGoName}} {{.FKGoType}}
 {{- end}}
 }
 
@@ -191,14 +191,71 @@ func parseGeneratedFilter(qp generatedQueryParams) ({{.RepoPackage}}.{{.EntityNa
 	return filter, nil
 }
 
-// parseGeneratedPath extracts path parameters
+// parseGeneratedPath extracts and parses path parameters to their actual types
 func parseGeneratedPath(r *http.Request) (generatedPathParams, error) {
-	pp := generatedPathParams{
-		{{.PKGoName}}: r.PathValue("{{.PKURLParam}}"),
+	var pp generatedPathParams
+
+	// Parse primary key
+	pkStr := r.PathValue("{{.PKURLParam}}")
+	if pkStr == "" {
+		return pp, fmt.Errorf("{{.PKURLParam}} is required")
+	}
+{{- if eq .PKGoType "string"}}
+	pp.{{.PKGoName}} = pkStr
+{{- else if eq .PKGoType "int"}}
+	pkVal, err := strconv.Atoi(pkStr)
+	if err != nil {
+		return pp, fmt.Errorf("invalid {{.PKURLParam}}: %s", pkStr)
+	}
+	pp.{{.PKGoName}} = pkVal
+{{- else if eq .PKGoType "int64"}}
+	pkVal, err := strconv.ParseInt(pkStr, 10, 64)
+	if err != nil {
+		return pp, fmt.Errorf("invalid {{.PKURLParam}}: %s", pkStr)
+	}
+	pp.{{.PKGoName}} = pkVal
+{{- else if eq .PKGoType "int32"}}
+	pkVal, err := strconv.ParseInt(pkStr, 10, 32)
+	if err != nil {
+		return pp, fmt.Errorf("invalid {{.PKURLParam}}: %s", pkStr)
+	}
+	pp.{{.PKGoName}} = int32(pkVal)
+{{- else}}
+	// Default: assume string type (e.g., UUID)
+	pp.{{.PKGoName}} = pkStr
+{{- end}}
+
 {{- range .ForeignKeys}}
-		{{.FKGoName}}: r.PathValue("{{.FKURLParam}}"),
+	// Parse foreign key: {{.FKGoName}}
+	fkStr{{.FKGoName}} := r.PathValue("{{.FKURLParam}}")
+	if fkStr{{.FKGoName}} != "" {
+{{- if eq .FKGoType "string"}}
+		pp.{{.FKGoName}} = fkStr{{.FKGoName}}
+{{- else if eq .FKGoType "int"}}
+		fkVal{{.FKGoName}}, errFK{{.FKGoName}} := strconv.Atoi(fkStr{{.FKGoName}})
+		if errFK{{.FKGoName}} != nil {
+			return pp, fmt.Errorf("invalid {{.FKURLParam}}: %s", fkStr{{.FKGoName}})
+		}
+		pp.{{.FKGoName}} = fkVal{{.FKGoName}}
+{{- else if eq .FKGoType "int64"}}
+		fkVal{{.FKGoName}}, errFK{{.FKGoName}} := strconv.ParseInt(fkStr{{.FKGoName}}, 10, 64)
+		if errFK{{.FKGoName}} != nil {
+			return pp, fmt.Errorf("invalid {{.FKURLParam}}: %s", fkStr{{.FKGoName}})
+		}
+		pp.{{.FKGoName}} = fkVal{{.FKGoName}}
+{{- else if eq .FKGoType "int32"}}
+		fkVal{{.FKGoName}}, errFK{{.FKGoName}} := strconv.ParseInt(fkStr{{.FKGoName}}, 10, 32)
+		if errFK{{.FKGoName}} != nil {
+			return pp, fmt.Errorf("invalid {{.FKURLParam}}: %s", fkStr{{.FKGoName}})
+		}
+		pp.{{.FKGoName}} = int32(fkVal{{.FKGoName}})
+{{- else}}
+		// Default: assume string type (e.g., UUID)
+		pp.{{.FKGoName}} = fkStr{{.FKGoName}}
 {{- end}}
 	}
+{{- end}}
+
 	return pp, nil
 }
 
@@ -290,13 +347,9 @@ func (b *GeneratedBridge) httpGetByID(ctx context.Context, r *http.Request) web.
 		return errs.Newf(errs.InvalidArgument, "invalid path arguments: %s", err)
 	}
 
-	if qpath.{{.PKGoName}} == "" {
-		return errs.Newf(errs.InvalidArgument, "{{.PKURLParam}} is required")
-	}
-
 	record, err := b.{{.EntityNameLower}}Repository.Get(ctx, qpath.{{.PKGoName}})
 	if err != nil {
-		return errs.Newf(errs.NotFound, "{{.EntityNameLower}} not found: %s", qpath.{{.PKGoName}})
+		return errs.Newf(errs.NotFound, "{{.EntityNameLower}} not found: %v", qpath.{{.PKGoName}})
 	}
 
 	return fopbridge.NewRecordResponse(record)
@@ -324,10 +377,6 @@ func (b *GeneratedBridge) httpUpdate(ctx context.Context, r *http.Request) web.E
 		return errs.Newf(errs.InvalidArgument, "invalid path arguments: %s", err)
 	}
 
-	if qpath.{{.PKGoName}} == "" {
-		return errs.Newf(errs.InvalidArgument, "{{.PKURLParam}} is required")
-	}
-
 	var input {{.RepoPackage}}.Update{{.EntityName}}
 	if err := web.Decode(r, &input); err != nil {
 		return errs.Newf(errs.InvalidArgument, "decode: %s", err)
@@ -348,10 +397,6 @@ func (b *GeneratedBridge) httpDelete(ctx context.Context, r *http.Request) web.E
 		return errs.Newf(errs.InvalidArgument, "invalid path arguments: %s", err)
 	}
 
-	if qpath.{{.PKGoName}} == "" {
-		return errs.Newf(errs.InvalidArgument, "{{.PKURLParam}} is required")
-	}
-
 	err = b.{{.EntityNameLower}}Repository.Delete(ctx, qpath.{{.PKGoName}})
 	if err != nil {
 		return errs.Newf(errs.Internal, "delete {{.EntityNameLower}}: %s", err)
@@ -366,10 +411,6 @@ func (b *GeneratedBridge) {{.MethodName}}(ctx context.Context, r *http.Request) 
 	qpath, err := parseGeneratedPath(r)
 	if err != nil {
 		return errs.Newf(errs.InvalidArgument, "invalid path arguments: %s", err)
-	}
-
-	if qpath.{{.FKGoName}} == "" {
-		return errs.Newf(errs.InvalidArgument, "{{.FKURLParam}} is required")
 	}
 
 	qp := parseGeneratedQueryParams(r)
